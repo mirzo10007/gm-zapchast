@@ -422,6 +422,41 @@ tr.click:hover td{background:#f3f7ff}
 
 @media (max-width:900px){body:has(#mCart:not([hidden])) .toasts{bottom:90px}}
 @media (max-width:760px){.srbar input#srQ{flex:1 1 100%}}
+
+/* ===== telefon: pastki menyu va ixcham ko'rinish ===== */
+.bnav{display:none}
+.msheet{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.msheet button{display:grid;justify-items:center;gap:8px;padding:16px 6px;border:1px solid var(--line);border-radius:16px;background:#fff;font:500 13px var(--f);color:var(--ink);cursor:pointer}
+.msheet button .i{width:24px;height:24px;color:var(--brand)}
+@media (max-width:760px){
+  body:not(.kassa) .bnav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:35;background:#fff;border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px -12px rgba(23,32,51,.25)}
+  body:not(.kassa)[data-role="seller"] .bnav{grid-template-columns:repeat(3,1fr)}
+  .bnav button{display:grid;justify-items:center;gap:3px;border:0;background:none;font:500 11px var(--f);color:var(--muted);padding:6px 0;border-radius:12px;cursor:pointer}
+  .bnav button .i{width:22px;height:22px}
+  .bnav button[aria-current]{color:var(--brand);background:var(--brand-soft)}
+  body:not(.kassa) .main{padding-bottom:76px}
+  body:not(.kassa) .mcart{bottom:80px}
+  header.top .side{display:none}
+  header.top .logo b{display:block!important;font-size:15px;max-width:52vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  header.top .topin{justify-content:space-between}
+  #lockBtn{display:none}
+  .wrap{padding-top:16px!important}
+  .pagehead{margin-bottom:16px;align-items:flex-start}.pagehead h1{font-size:22px!important}.pagehead .sub{font-size:13px}
+  .pagehead .acts{display:flex;gap:6px;flex-wrap:wrap;width:100%}.pagehead .acts .btn{padding:8px 12px;font-size:13px}
+  .kpis{grid-template-columns:1fr 1fr!important;gap:10px!important;margin-bottom:18px}
+  .kpi,.kpi+.kpi{padding:12px 14px!important;border-radius:14px!important}
+  .kpi .v{font-size:22px;margin-top:4px}.kpi .l{font-size:12px}.kpi .s,.kpi .sub{font-size:11.5px}
+  .card-h{padding:14px 16px;flex-wrap:wrap;gap:8px}.card-b{padding:14px 16px}
+  .card-h input,.card-h select,.card-h .searchbox{flex:1 1 100%;min-width:0}
+  td,th{padding:10px 10px!important;font-size:13px}
+  .tbl{-webkit-overflow-scrolling:touch}
+  .kpos .row{flex-wrap:wrap!important}.kpos .row .searchbox{flex:1 1 100%}
+  .modal .row{flex-wrap:wrap!important}
+  .grid.g2,.grid.g3{gap:14px}
+}
+
+@media (max-width:760px){#stTable th:nth-child(1),#stTable td:nth-child(1),#stTable th:nth-child(4),#stTable td:nth-child(4),#stTable th:nth-child(7),#stTable td:nth-child(7),#stTable th:nth-child(8),#stTable td:nth-child(8){display:none}
+  #stTable td,#stTable th{padding:9px 6px!important}#stTable td:first-of-type,#stTable td:nth-child(2){padding-left:12px!important}#stTable td:nth-child(2){min-width:0;word-break:break-word}#stTable table{min-width:0!important;width:100%}}
 </style>
 </head>
 <body>
@@ -454,6 +489,7 @@ tr.click:hover td{background:#f3f7ff}
   <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></symbol>
   <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H8a6 6 0 1 1 5.7-7.9A4.5 4.5 0 1 1 17.5 19Z"/></symbol>
   <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M17 8v8"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></symbol>
 </svg>
 
@@ -733,6 +769,13 @@ tr.click:hover td{background:#f3f7ff}
 <div id="modalRoot"></div>
 <div class="toasts" id="toastRoot"></div>
 <button id="mCart" class="mcart" hidden></button>
+<nav id="bnav" class="bnav" aria-label="Bo'limlar">
+  <button data-bt="bosh" class="owner-only"><svg class="i"><use href="#i-home"/></svg><span>Bosh</span></button>
+  <button data-bt="kassa" class="owner-only"><svg class="i"><use href="#i-cart"/></svg><span>Kassa</span></button>
+  <button data-bt="ombor"><svg class="i"><use href="#i-box"/></svg><span>Ombor</span></button>
+  <button data-bt="kirim"><svg class="i"><use href="#i-truck"/></svg><span>Kirim</span></button>
+  <button data-bt="more"><svg class="i"><use href="#i-menu"/></svg><span>Yana</span></button>
+</nav>
 <div id="lock" hidden></div>
 <iframe id="printFrame" title="Chop etish" style="position:fixed;width:0;height:0;border:0;right:0;bottom:0"></iframe>
 
@@ -1457,13 +1500,13 @@ function renderBackupBox(){const on=bdir&&bOk;$("bDot").className="dot "+(on?"on
 $("bPick").onclick=pickBackupDir;
 $("bNow").onclick=async()=>{if(bdir&&!bOk){await backupPerm();return}if(await runBackup(true)){logA("Qo'lda zaxira","");persist();toast("Zaxira saqlandi")}else toast("Zaxira saqlanmadi",true)};
 function refreshBanner(){
-  if(FS&&!fileHandle&&!CL.on)return banner("Ma'lumotlar hozir faqat brauzer xotirasida. Kompyuterda alohida fayl ham bo'lishi uchun ma'lumot faylini yarating.",'<button class="btn sm pri" data-act="newfile">Fayl yaratish</button>');
+  if(FS&&!fileHandle&&!CL.on&&!NARROW())return banner("Ma'lumotlar hozir faqat brauzer xotirasida. Kompyuterda alohida fayl ham bo'lishi uchun ma'lumot faylini yarating.",'<button class="btn sm pri" data-act="newfile">Fayl yaratish</button>');
   if(fileHandle&&!fileOk)return banner("Ma'lumot fayliga yozish uchun ruxsat kerak.",'<button class="btn sm" data-act="reconnect">Faylga ulanish</button>');
   if(!isOwner())return banner("");
   if(LIC&&LIC.d&&LIC.d.e){const left=Math.floor((new Date(LIC.d.e)-new Date(ymd()))/864e5);if(left<=10)return banner("Dastur litsenziyasi "+left+" kundan keyin tugaydi ("+dmy(LIC.d.e)+"). Sotuvchidan yangi kalit oling.",'<button class="btn sm" data-act="licrenew">Kalitni yangilash</button>')}
-  if(window.showDirectoryPicker&&!bdir)return banner("Avtomatik kunlik zaxira yoqilmagan. Zaxira uchun papka tanlang — har kuni o'zi nusxa oladi.",'<button class="btn sm" data-act="pickbackup">Papka tanlash</button>');
+  if(window.showDirectoryPicker&&!bdir&&!NARROW())return banner("Avtomatik kunlik zaxira yoqilmagan. Zaxira uchun papka tanlang — har kuni o'zi nusxa oladi.",'<button class="btn sm" data-act="pickbackup">Papka tanlash</button>');
   if(bdir&&!bOk)return banner("Zaxira papkasiga yozish uchun ruxsat kerak.",'<button class="btn sm" data-act="bperm">Ruxsat berish</button>');
-  const ds=daysSince(S.settings.lastExport);if(ds>=7)return banner(S.settings.lastExport?"Fleshkaga oxirgi zaxira "+ds+" kun oldin olingan. Yangi nusxa oling va fleshkaga ko'chiring.":"Hali fleshkaga zaxira olinmagan. Nusxa yuklab olib, fleshkaga ko'chiring.",'<button class="btn sm" data-act="exportnow">Zaxira yuklab olish</button>');
+  const ds=daysSince(S.settings.lastExport);if(ds>=7&&!NARROW()&&!APP&&!CL.on)return banner(S.settings.lastExport?"Fleshkaga oxirgi zaxira "+ds+" kun oldin olingan. Yangi nusxa oling va fleshkaga ko'chiring.":"Hali fleshkaga zaxira olinmagan. Nusxa yuklab olib, fleshkaga ko'chiring.",'<button class="btn sm" data-act="exportnow">Zaxira yuklab olish</button>');
   banner("")}
 
 
@@ -1894,6 +1937,16 @@ function updMCart(){const m=$("mCart");if(!m)return;const n=S.cart.length;m.hidd
 {const o=renderAll;renderAll=function(){o.apply(this,arguments);try{updMCart();setCloudUi()}catch(e){}}}
 {const o=printDoc;printDoc=function(){if(APP){toast("Telefonda chek chop etilmaydi — kompyuterdan chop eting");return}return o.apply(this,arguments)}}
 {const o=printA4;printA4=function(){if(APP){toast("Telefonda chop etilmaydi — Excel tugmasidan foydalaning yoki kompyuterdan chop eting");return}return o.apply(this,arguments)}}
+
+// ================= phone layout: bottom navigation =================
+const NARROW=()=>matchMedia("(max-width:760px)").matches;
+function moreSheet(){const it=[["cheklar","receipt","Cheklar"],["mijoz","users","Mijozlar va qarz"],["hisobot","chart","Hisobot"],["jurnal","clock","Jurnal"],["sozlama","sliders","Sozlamalar"]];
+  modal("Bo'limlar",'<div class="msheet">'+it.filter(x=>isOwner()||!["hisobot","jurnal","sozlama"].includes(x[0])).map(x=>'<button data-sheet="'+x[0]+'">'+ic(x[1])+'<span>'+x[2]+'</span></button>').join("")+'<button data-sheet="lock">'+ic("lock")+'<span>Qulflash</span></button></div>');
+  document.querySelector(".msheet").onclick=e=>{const b=e.target.closest("[data-sheet]");if(!b)return;closeModal();if(b.dataset.sheet==="lock")lockNow();else showTab(b.dataset.sheet)}}
+$("bnav").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const t=b.dataset.bt;
+  if(t==="kassa")setMode("kassa");else if(t==="more")moreSheet();else showTab(t);try{scrollTo(0,0)}catch(_){}});
+function updBnav(){const more=["cheklar","mijoz","hisobot","jurnal","sozlama"].includes(curTab);document.querySelectorAll("#bnav button").forEach(b=>{const on=b.dataset.bt===curTab||(b.dataset.bt==="more"&&more);b.toggleAttribute("aria-current",on)})}
+{const o=showTab;showTab=function(){o.apply(this,arguments);try{updBnav()}catch(e){}}}
 
 // ================= boot =================
 (async()=>{
