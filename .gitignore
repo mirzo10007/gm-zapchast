@@ -1,0 +1,10 @@
+node_modules/
+mobile/www/
+mobile/android/
+desktop/app/
+desktop/dist/
+tools/.main.js
+web/GM_Zapchast.html
+*.p12
+*.jks
+lic/
