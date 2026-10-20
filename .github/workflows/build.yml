@@ -49,6 +49,10 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           mkdir -p www && cp ../web/GM_Zapchast.html www/index.html
+          if [ -f node_modules/@capacitor/core/dist/capacitor.js ]; then
+            cp node_modules/@capacitor/core/dist/capacitor.js www/
+            python3 -c "p='www/index.html';s=open(p,encoding='utf-8').read();s=s.replace('<head>','<head><script src=\"capacitor.js\"></script>',1);open(p,'w',encoding='utf-8').write(s)"
+          fi
           npx cap add android
           npx capacitor-assets generate --android || echo "icon generation skipped"
           python3 - <<'PY'
@@ -81,7 +85,8 @@ jobs:
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
           IN=mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
           $BT/zipalign -p -f 4 $IN aligned.apk
-          echo "$KS_B64" | base64 -d > ks.p12
+          if [ -n "$KS_B64" ]; then echo "$KS_B64" | base64 -d > ks.p12; else cp mobile/signing/gmz-release.keystore ks.p12; fi
+          if [ -z "$KS_PASS" ]; then export KS_PASS="$(tr -d '\r\n' < mobile/signing/password.txt)"; fi
           $BT/apksigner sign --ks ks.p12 --ks-type PKCS12 --ks-key-alias gmz --ks-pass env:KS_PASS --key-pass env:KS_PASS --out GM-Zapchast-${VERSION}.apk aligned.apk
           $BT/apksigner verify --print-certs GM-Zapchast-${VERSION}.apk | head -3
           rm ks.p12

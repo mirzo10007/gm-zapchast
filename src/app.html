@@ -419,6 +419,9 @@ tr.click:hover td{background:#f3f7ff}
   input,select,textarea{font-size:16px}
   .pagehead{flex-wrap:wrap;gap:10px}
 }
+
+@media (max-width:900px){body:has(#mCart:not([hidden])) .toasts{bottom:90px}}
+@media (max-width:760px){.srbar input#srQ{flex:1 1 100%}}
 </style>
 </head>
 <body>
@@ -761,7 +764,7 @@ const DBN="gm-zapchast",STORE="kv";
 function idb(){return new Promise((res,rej)=>{const r=indexedDB.open(DBN,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 async function kvGet(k){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction(STORE).objectStore(STORE).get(k);t.onsuccess=()=>res(t.result);t.onerror=()=>rej(t.error)})}
 async function kvSet(k,v){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
-const EXE=!!window.gmz;const APP=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());const FS=!EXE&&!!window.showSaveFilePicker;
+const EXE=!!window.gmz;const APP=!!(window.Capacitor&&((window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())||(window.Capacitor.getPlatform&&window.Capacitor.getPlatform()!=="web")||window.androidBridge));const FS=!EXE&&!!window.showSaveFilePicker;
 let fileHandle=null,fileOk=false,saveTimer=null,dirty=false;
 function snapshot(){return JSON.stringify({v:2,savedAt:Date.now(),products:S.products,sales:S.sales,kirim:S.kirim,customers:S.customers,payments:S.payments,returns:S.returns,users:S.users,log:S.log,settings:S.settings})}
 function persist(){dirty=true;setSaveUi();clearTimeout(saveTimer);saveTimer=setTimeout(flush,300);if(CL.on)clSoon()}
@@ -1489,7 +1492,7 @@ const LPUB={"kty":"EC","crv":"P-256","x":"fyCRTyZJE_PTfvc4jB39G0ftAnZz0WAi5QubfS
 let LIC=null,LCODE="";
 const b64uDec=s=>{s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";return Uint8Array.from(atob(s),c=>c.charCodeAt(0))};
 async function sha256hex(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
-async function machineCode(){if(APP){let id="";try{const D=window.Capacitor.Plugins.Device;const r=await D.getId();id=r.identifier||r.uuid||""}catch(e){}if(id){const h=(await sha256hex("GMZA|"+id)).toUpperCase();return h.slice(0,4)+"-"+h.slice(4,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)}}if(EXE){const id=await gmz.machineId();const h=(await sha256hex("GMZX|"+id)).toUpperCase();return h.slice(0,4)+"-"+h.slice(4,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)}const parts=[];
+async function machineCode(){if(APP){let id="";try{const r=await capPlugin("Device").getId();id=r.identifier||r.uuid||""}catch(e){}if(id){const h=(await sha256hex("GMZA|"+id)).toUpperCase();return h.slice(0,4)+"-"+h.slice(4,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)}}if(EXE){const id=await gmz.machineId();const h=(await sha256hex("GMZX|"+id)).toUpperCase();return h.slice(0,4)+"-"+h.slice(4,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)}const parts=[];
   try{const gl=document.createElement("canvas").getContext("webgl");const ext=gl&&gl.getExtension("WEBGL_debug_renderer_info");if(ext)parts.push(gl.getParameter(ext.UNMASKED_VENDOR_WEBGL),gl.getParameter(ext.UNMASKED_RENDERER_WEBGL));else if(gl)parts.push(gl.getParameter(gl.RENDERER))}catch(e){}
   parts.push(navigator.hardwareConcurrency||0,navigator.deviceMemory||0,navigator.platform||"",(Intl.DateTimeFormat().resolvedOptions().timeZone)||"");
   const h=(await sha256hex("GMZ|"+parts.join("|"))).toUpperCase();return h.slice(0,4)+"-"+h.slice(4,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)}
@@ -1595,7 +1598,7 @@ function stockReport(preset){const lowN=stockReportRows("low").length,outN=stock
     logA("Ro'yxat chop etildi",title+" · "+rows.length+" ta");persist();closeModal()};
   $("srXls").onclick=()=>{const rows=chosen();download((TITLE[kind]).replace(/\s+/g,"-").toLowerCase()+"-"+ymd()+".xlsx",xlsx([[TITLE[kind].slice(0,30),rows.map(p=>({"№":p.no,"Nomi":p.n,"Shtrix-kod":(p.bcs||[]).join(", "),"Qoldiq":Number(p.q)||0,"Min":p.min||0,"Kerak":Math.max(0,(p.min||0)-(Number(p.q)||0)),"Narx $":p.p}))]]))}}
 // ================= Cyrillic interface layer (Uzbek Latin -> Cyrillic) =================
-const CYR_KEEP=new Set(["GM","EAN","USB","CSV","JSON","Excel","Windows","Chrome","Edge","Google","Microsoft","Node","PDF","Ctrl","Enter","Tab","Esc","Shift","GMZ"]);
+const CYR_KEEP=new Set(["GM","EAN","USB","CSV","JSON","Excel","Windows","Chrome","Edge","Google","Microsoft","Node","PDF","Ctrl","Enter","Tab","Esc","Shift","GMZ","Firebase","Firestore","Rules","Authentication","Email","email","firebaseConfig","apiKey","projectId","Publish","Database","GitHub","Android","APK","EXE","HTML","Releases","Project","Settings","Build","Web","app","Register","Sign","Create","Start","production","mode","Add","user","Enable"]);
 let BRANDS=new Set();
 let UIW=null;
 function uiVocab(){const s=new Set();try{for(const sc of document.scripts){let src=sc.textContent||"";const m=/var b="([A-Za-z0-9+/=]{100,})"/.exec(src);if(m){const x=atob(m[1]),u=new Uint8Array(x.length);for(let i=0;i<x.length;i++)u[i]=x.charCodeAt(i);src=new TextDecoder().decode(u)}else if(!src.includes("function startCyr"))continue;
@@ -1863,7 +1866,12 @@ async function clConnect(){const msg=t=>{$("clMsg").textContent=t||""};const cfg
 const devTag=()=>CL.on&&CL.cfg&&CL.cfg.tag?CL.cfg.tag:"";
 const newPid=no=>CL.on?"p"+no+"_"+rid().slice(0,4):"p"+no;
 // ---- phone camera scanner ----
-async function camScan(){const C=window.Capacitor,P=C&&C.Plugins&&C.Plugins.BarcodeScanner;
+const CAPP={};
+function capPlugin(n){const C=window.Capacitor;if(!C)return null;if(CAPP[n])return CAPP[n];
+  if(C.Plugins&&C.Plugins[n])return CAPP[n]=C.Plugins[n];
+  if(C.registerPlugin){try{return CAPP[n]=C.registerPlugin(n)}catch(e){}}
+  if(C.nativePromise)return CAPP[n]=new Proxy({},{get:(_,m)=>o=>C.nativePromise(n,m,o||{})});return null}
+async function camScan(){const P=APP?capPlugin("BarcodeScanner"):null;
   if(P){try{const r=await P.scan();const b=r&&r.barcodes&&r.barcodes[0];return b?(b.rawValue||b.displayValue||""):""}
     catch(e){const m=String(e&&e.message||e);if(/cancel/i.test(m))return "";
       try{const a=await P.isGoogleBarcodeScannerModuleAvailable();if(!a||!a.available){await P.installGoogleBarcodeScannerModule();toast("Skaner moduli yuklanmoqda — bir daqiqadan keyin qayta bosing");return ""}}catch(_){}
