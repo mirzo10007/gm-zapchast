@@ -111,6 +111,18 @@ ipcMain.handle('gmz:cbu', async (e, url) => {
   return await r.json();
 });
 
+// ---- Telegram'ga zaxira yuborish (Bot API) ----
+ipcMain.handle('gmz:tg', async (e, url, form) => {
+  if (!/^https:\/\/api\.telegram\.org\/bot[^/]+\/\w+$/.test(String(url))) throw new Error('url');
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(form || {})) {
+    if (v && typeof v === 'object' && v.text !== undefined) fd.append(k, new Blob([v.text], { type: 'application/json' }), v.name);
+    else fd.append(k, String(v));
+  }
+  const r = await fetch(url, { method: 'POST', body: fd });
+  return await r.json();
+});
+
 // ---- litsenziya uchun kompyuter identifikatori ----
 ipcMain.handle('gmz:machineId', () => {
   let guid = '';

@@ -787,6 +787,10 @@ tfoot td{border-top:1px solid var(--line);border-bottom:0;background:var(--surfa
                 <div class="small muted" id="bExport"></div>
               </div>
             </div>
+            <div class="card">
+              <div class="card-h"><h3>Telegram'ga zaxira</h3><span class="spacer"></span><span class="hint">internet orqali, har kuni</span></div>
+              <div class="card-b" style="display:grid;gap:12px" id="tgBox"></div>
+            </div>
             <div class="seg" id="sTheme" hidden></div>
           </div>
         </div>
@@ -1165,7 +1169,7 @@ function zReport(uid,d0){const fromRep=!!d0;d0=d0||ymd();const draw=d=>{const st
     '<dt><b>Jami savdo</b></dt><dd class="big">'+fmt(st.sum)+'</dd><div class="sep"></div><dt>Qarz to\'lovlari (naqd)</dt><dd>'+fmt(st.payBy.naqd)+'</dd><dt>Qarz to\'lovlari (karta/o\'tkazma)</dt><dd>'+fmt(st.payBy.karta+st.payBy.otkazma)+'</dd>'+
     '<dt><b>Kassada bo\'lishi kerak (naqd)</b></dt><dd class="big">'+fmt(st.cash)+'</dd>'+(isOwner()?'<div class="sep"></div><dt>Foyda</dt><dd>'+fmt(st.profit)+'</dd>':'')+'</dl>'};
   modal(uid?"Smena yakuni — "+esc((S.users[uid]||{}).name||""):fromRep?"Kunlik hisobot":"Kunni yopish",'<label class="field">Sana<input type="date" id="zDate" value="'+d0+'"></label><div id="zBody"></div>','<span class="spacer"></span><button class="btn" id="zClose">Yopish</button><button class="btn pri" id="zPrint">'+ic("print")+'Chop etish</button>');
-  draw(d0);$("zDate").onchange=()=>draw($("zDate").value);$("zClose").onclick=closeModal;$("zPrint").onclick=()=>{const d=$("zDate").value||ymd(),st=dayStats(d,uid);printDoc(zHtml(d,st,uid?"SMENA YAKUNI":""),"Z-hisobot "+d);logA(uid?"Smena yakuni":"Kun yopildi",dmy(d)+" · savdo "+fmt(st.sum)+" · kassada "+fmt(st.cash));persist();runBackup(true)}}
+  draw(d0);$("zDate").onchange=()=>draw($("zDate").value);$("zClose").onclick=closeModal;$("zPrint").onclick=()=>{const d=$("zDate").value||ymd(),st=dayStats(d,uid);printDoc(zHtml(d,st,uid?"SMENA YAKUNI":""),"Z-hisobot "+d);logA(uid?"Smena yakuni":"Kun yopildi",dmy(d)+" · savdo "+fmt(st.sum)+" · kassada "+fmt(st.cash));persist();runBackup(true);tgSend(true,"kun yopildi")}}
 
 // ================= stock =================
 $("stSearch").addEventListener("input",renderStock);bindSeg("stFilter",renderStock);
@@ -1465,13 +1469,13 @@ async function lockInput(k){if(Date.now()<LK.until)return;const u=S.users[LK.uid
   else{LK.fails++;logA("Noto'g'ri PIN","urinish "+LK.fails,u.name+" (?)");persist();if(LK.fails>=5){LK.until=Date.now()+30000;LK.fails=0}
     drawLock("PIN-kod noto'g'ri");const d=$("pinDots");if(d)d.classList.add("shake")}}
 function afterUnlock(){const L=$("lock");L.hidden=true;L.innerHTML="";lastAct=Date.now();
-  if(fileHandle&&!fileOk)reconnect();if(bdir&&!bOk)backupPerm();else runBackup();
+  if(fileHandle&&!fileOk)reconnect();if(bdir&&!bOk)backupPerm();else runBackup();setTimeout(tgAuto,5000);
   renderUser();setMode(isOwner()?(S.settings.ownerMode||"main"):"kassa")}
 function lockNow(){if(!ME)return;logA("Qulflandi","");persist();showLock()}
 $("lockBtn").onclick=lockNow;
 let lastAct=Date.now();["mousemove","mousedown","keydown","touchstart","wheel"].forEach(ev=>document.addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
 setInterval(()=>{const m=Number(S.settings.lockMin??15);if(ME&&m>0&&Date.now()-lastAct>m*60000){logA("Avtomatik qulflandi","");persist();showLock()}
-  if(ME&&bdir&&bOk&&S.settings.lastBackup!==ymd())runBackup()},15000);
+  if(ME&&bdir&&bOk&&S.settings.lastBackup!==ymd())runBackup();if(ME)tgAuto()},15000);
 
 // ---- owner approval ----
 function requireOwner(why,cb){if(isOwner()){cb();return}
@@ -1488,7 +1492,7 @@ function requireOwner(why,cb){if(isOwner()){cb();return}
 function renderSecurity(){const us=Object.entries(S.users);
   $("uTable").innerHTML='<table><thead><tr><th>Ism</th><th>Rol</th><th>Holat</th><th></th></tr></thead><tbody>'+us.map(([id,u])=>'<tr><td><b style="font-weight:600">'+esc(u.name)+'</b>'+(ME&&ME.id===id?' <span class="muted small">(siz)</span>':'')+'</td><td>'+ROLE[u.role]+'</td><td>'+(u.off?'<span class="pill mute">o\'chirilgan</span>':'<span class="pill ok">faol</span>')+'</td><td class="n"><button class="btn sm" data-ue="'+id+'">O\'zgartirish</button></td></tr>').join("")+'</tbody></table>';
   if(!(document.activeElement&&document.activeElement.closest("#p-sozlama .form"))){$("secLock").value=String(S.settings.lockMin??15);$("secDisc").value=S.settings.maxDisc??5}
-  renderBackupBox();$("licInfo").innerHTML=licInfoHtml()}
+  renderBackupBox();renderTgBox();$("licInfo").innerHTML=licInfoHtml()}
 const _rs0=renderSettings;renderSettings=function(){_rs0();renderSecurity();if(EXE&&!loadPrinters._d){loadPrinters._d=1;loadPrinters()}};
 $("uAdd").onclick=()=>userModal(null);
 $("uTable").addEventListener("click",e=>{const b=e.target.closest("[data-ue]");if(b)userModal(b.dataset.ue)});
@@ -1534,6 +1538,42 @@ function editKurs(){const c=S.settings.cbu;
   $("ekYes").onclick=()=>{const v=Number($("ekV").value);if(!(v>0)){toast("Kursni to'g'ri kiriting",true);return}const o=S.settings.kurs;closeModal();if(v===o)return;
     S.settings.kurs=v;logA("Sozlamalar o'zgartirildi","kurs "+fmt(o)+" → "+fmt(v));persist();renderAll();toast("Do'kon kursi: "+fmt(v)+" so'm")}}
 setInterval(fetchCbu,60*60*1000);addEventListener("online",fetchCbu);setTimeout(fetchCbu,1500);
+
+// ---- Telegram'ga zaxira: har kuni ma'lumotlar nusxasi botga yuboriladi ----
+let tgBusy=false,tgFailAt=0;
+async function tgCall(token,method,form){const url="https://api.telegram.org/bot"+token+"/"+method;let j;
+  if(EXE&&gmz.tg)j=await gmz.tg(url,form);
+  else{const fd=new FormData();for(const k in form){const v=form[k];if(v&&v.text!==undefined)fd.append(k,new Blob([v.text],{type:"application/json"}),v.name);else fd.append(k,v)}
+    const r=await fetch(url,{method:"POST",body:fd});j=await r.json()}
+  if(!j||!j.ok)throw new Error((j&&j.description)||"Telegram javob bermadi");return j.result}
+function tgErrText(e){const m=String(e&&e.message||e);if(/Unauthorized|Not Found/i.test(m))return "Bot tokeni noto'g'ri";if(/chat not found|bot was blocked|kicked/i.test(m))return "Bot chatga yozolmayapti — botga /start yozing";if(/Failed to fetch|NetworkError|network/i.test(m))return "Internet yo'q";return m}
+async function tgSend(force,why){const c=S.settings.tg;if(!c||!c.token||!c.chat||tgBusy)return false;const d=ymd();if(!force&&c.last===d)return true;tgBusy=true;
+  try{const st=dayStats(d),cap="GM Zapchast — zaxira nusxa\n"+dmy(d)+" "+hm(new Date())+(why?" ("+why+")":"")+"\nMahsulotlar: "+fmt(live().length)+" · bugungi savdo: "+fmt(st.sum)+" so'm\nTiklash: Sozlamalar → Zaxiradan tiklash";
+    await tgCall(c.token,"sendDocument",{chat_id:String(c.chat),caption:cap,document:{name:"gm-zapchast-"+d+"-"+hm(new Date()).replace(":","")+".json",text:snapshot()}});
+    c.last=d;c.lastT=stamp();c.err="";tgFailAt=0;persist();return true}
+  catch(e){c.err=tgErrText(e);tgFailAt=Date.now();return false}finally{tgBusy=false;if(curTab==="sozlama")renderTgBox()}}
+function tgAuto(){const c=S.settings.tg;if(!c||!c.chat||c.auto===false||c.last===ymd()||Date.now()-tgFailAt<10*60000||navigator.onLine===false)return;tgSend(false,"kunlik")}
+function renderTgBox(){const box=$("tgBox");if(!box)return;const c=S.settings.tg||{};
+  if(!c.chat){box.innerHTML='<p class="small muted" style="margin:0">Har kuni ma\'lumotlar nusxasi Telegram\'dagi botingizga fayl bo\'lib yuboriladi. Kompyuter yoki telefon buzilsa ham ma\'lumot yo\'qolmaydi.</p>'+
+    '<ol class="steps small" style="margin:0"><li>Telegram\'da <b>@BotFather</b> ni oching → <b>/newbot</b> → botga nom bering. U bergan <b>tokenni</b> nusxalang.</li><li>Tokenni pastga qo\'ying va <b>Tekshirish</b>ni bosing.</li><li>O\'z botingizga Telegram\'da <b>/start</b> yozing (yoki botni guruhga qo\'shib, guruhga biror narsa yozing), keyin <b>Chatni ulash</b>ni bosing.</li></ol>'+
+    '<label class="field">Bot tokeni<input id="tgTok" placeholder="123456789:AA..." autocomplete="off" value="'+esc(c.token||"")+'"></label>'+
+    '<div class="row" style="flex-wrap:wrap"><button class="btn" id="tgCheck">Tekshirish</button><button class="btn pri" id="tgLink"'+(c.bot?'':' disabled')+'>Chatni ulash</button></div><div class="small" id="tgMsg">'+(c.bot?'Bot: <b>@'+esc(c.bot)+'</b> — endi unga /start yozing va "Chatni ulash"ni bosing':'')+'</div>';
+    $("tgCheck").onclick=async()=>{const tok=$("tgTok").value.trim();if(!/^\d+:[\w-]{20,}$/.test(tok)){$("tgMsg").textContent="Token ko'rinishi noto'g'ri";return}$("tgMsg").textContent="Tekshirilmoqda…";
+      try{const me=await tgCall(tok,"getMe",{});S.settings.tg={token:tok,bot:me.username,auto:true};persist();renderTgBox()}catch(e){$("tgMsg").textContent=tgErrText(e)}};
+    if(c.bot)$("tgLink").onclick=async()=>{$("tgMsg").textContent="Qidirilmoqda…";
+      try{const u=await tgCall(c.token,"getUpdates",{});let chat=null;for(const x of u.reverse()){const m=x.message||x.channel_post||x.my_chat_member||x.edited_message;if(m&&m.chat){chat=m.chat;break}}
+        if(!chat){$("tgMsg").innerHTML='Xabar topilmadi. Telegram\'da <b>@'+esc(c.bot)+'</b> ga /start yozing va qayta bosing.';return}
+        c.chat=chat.id;c.chatName=chat.title||[chat.first_name,chat.last_name].filter(Boolean).join(" ")||chat.username||String(chat.id);persist();
+        await tgCall(c.token,"sendMessage",{chat_id:String(c.chat),text:"✅ GM Zapchast ulandi. Har kuni shu yerga zaxira nusxa yuboriladi."});logA("Telegram zaxira ulandi",c.chatName);
+        renderTgBox();if(await tgSend(true,"ulandi"))toast("Birinchi zaxira Telegram'ga yuborildi")}catch(e){$("tgMsg").textContent=tgErrText(e)}};
+    return}
+  box.innerHTML='<div class="filebox"><div class="row"><span class="dot '+(c.err?"off":"on")+'"></span><b>'+(c.err?"Oxirgi yuborish bo'lmadi":"Telegram'ga zaxira yoqilgan")+'</b></div>'+
+    '<div class="small muted">Bot: @'+esc(c.bot||"")+' → '+esc(c.chatName||"")+'<br>'+(c.lastT?"Oxirgi nusxa: "+dmy(c.lastT.slice(0,10))+" "+c.lastT.slice(11,16):"Hali yuborilmagan")+(c.err?'<br><span style="color:var(--bad)">'+esc(c.err)+'</span>':'')+'</div>'+
+    '<label class="switch"><input type="checkbox" id="tgAutoC"'+(c.auto!==false?" checked":"")+'><i></i><span>Har kuni avtomatik yuborilsin (kun yopilganda ham)</span></label>'+
+    '<div class="row" style="flex-wrap:wrap"><button class="btn pri" id="tgNow">Hozir yuborish</button><button class="btn" id="tgOff">Uzish</button></div></div>';
+  $("tgAutoC").onchange=()=>{c.auto=$("tgAutoC").checked;persist()};
+  $("tgNow").onclick=async()=>{$("tgNow").disabled=true;if(await tgSend(true,"qo'lda")){logA("Telegram'ga zaxira yuborildi","");persist();toast("Zaxira Telegram'ga yuborildi")}else toast(c.err||"Yuborilmadi",true);renderTgBox()};
+  $("tgOff").onclick=()=>{logA("Telegram zaxira uzildi",c.chatName||"");delete S.settings.tg;persist();renderTgBox()}}
 
 // ---- journal ----
 let jLimit=300;const jReset=()=>{jLimit=300;renderJournal()};

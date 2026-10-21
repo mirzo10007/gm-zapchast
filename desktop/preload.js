@@ -13,5 +13,6 @@ contextBridge.exposeInMainWorld('gmz', {
   printers: () => ipcRenderer.invoke('gmz:printers'),
   print: (html, opt) => ipcRenderer.invoke('gmz:print', html, opt),
   machineId: () => ipcRenderer.invoke('gmz:machineId'),
-  cbu: (url) => ipcRenderer.invoke('gmz:cbu', url)
+  cbu: (url) => ipcRenderer.invoke('gmz:cbu', url),
+  tg: (url, form) => ipcRenderer.invoke('gmz:tg', url, form)
 });
