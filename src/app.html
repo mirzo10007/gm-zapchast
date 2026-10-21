@@ -293,11 +293,20 @@ body.kassa .wrap{max-width:1600px;padding-top:24px}
 .kacts .btn:hover{border-color:var(--line2)}
 .kacts kbd{font:500 11px var(--f);color:var(--muted);margin-left:2px}
 body.kassa .cartp .card-h [data-act="vozvrat"]{display:none}
-.kursbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px;margin-bottom:14px;padding:10px 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font-size:14px}
+.kursbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;margin-bottom:12px;padding:5px 8px 5px 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font-size:14px}
 .kursbar .ki{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
 .kursbar .ki b{font-size:16px;font-weight:600}
 .kursbar .up{color:var(--good,#16a34a)}.kursbar .dn{color:var(--bad)}
 .kursbar .spacer{flex:1}
+.kursbar .btn{padding:5px 12px}
+/* kassa: ekran past bo'lsa ham chekdagi tovarlar ro'yxati ko'rinib tursin */
+@media (min-width:901px){.lines{min-height:150px}.cartp{overflow:auto}}
+@media (min-width:901px) and (max-height:900px){
+  .cartp .card-h{padding:12px 20px 4px}.lines{padding:0 20px}.line{padding:8px 0;gap:6px}
+  .cartfoot{padding:8px 20px 12px;gap:6px}.grand{padding:0}.grand b{font-size:26px}
+  .paybtn{height:44px}.paygrid button{padding:6px 4px}.trow input{padding:4px 12px}.lastbar{padding:4px 6px 4px 12px}
+  .step button{width:28px;height:28px}
+  body.kassa .wrap{padding-top:14px}}
 @media (max-width:760px){.kursbar{padding:8px 12px;gap:4px 14px;font-size:13px}.kursbar .ki b{font-size:15px}.kursbar .spacer{display:none}}
 .kstat div{white-space:nowrap}
 td.num{white-space:nowrap}
@@ -584,7 +593,7 @@ tfoot td{border-top:1px solid var(--line);border-bottom:0;background:var(--surfa
             <div class="card-h"><h3>Yangi chek</h3><span class="hint" id="nextNo"></span><span class="spacer"></span><button class="btn ghost sm" data-act="vozvrat">Vozvrat</button><button class="btn ghost sm" id="cartClear"><svg class="i"><use href="#i-trash"/></svg>Tozalash</button></div>
             <div class="lines" id="cart"></div>
             <div class="cartfoot">
-              <div class="trow"><span class="muted">Mahsulotlar</span><span class="num" id="tSub">0</span></div>
+              <div class="trow"><span class="muted">Mahsulotlar <span id="tCnt"></span></span><span class="num" id="tSub">0</span></div>
               <div class="trow"><span class="muted">Chegirma <span class="small">(so'm yoki %)</span></span><input id="disc" placeholder="0" autocomplete="off"></div>
               <div class="lastbar" id="lastBar" hidden><button class="lastinfo" id="lastOpen" title="Chekni ko'rish"><span class="muted">Oxirgi chek</span> <b id="lastNo"></b> · <span id="lastSum"></span></button><button class="btn sm" id="lastPrint" title="Qayta chop etish (F7)"><svg class="i"><use href="#i-print"/></svg>Qayta</button></div>
               <div class="grand"><span>Jami to'lov</span><b id="tSum">0</b></div>
@@ -1003,7 +1012,8 @@ const stockOf=pid=>Math.max(0,Number((S.products[pid]||{}).q)||0);
 function addToCart(id){const p=S.products[id];if(!p)return;const have=stockOf(id),ex=S.cart.find(l=>l.pid===id),want=r3((ex?ex.qty:0)+1);
   if(have<=0){toast(p.n+" — omborda yo'q, sotib bo'lmaydi",true);return}
   if(want>have){toast("Omborda faqat "+fq(have)+" dona bor",true);return}
-  if(ex)ex.qty=want;else S.cart.push({pid:id,qty:1,price:priceOf(p)});renderCart()}
+  if(ex)ex.qty=want;else S.cart.push({pid:id,qty:1,price:priceOf(p)});renderCart();
+  if(matchMedia("(min-width:901px)").matches){const c=$("cart"),ln=c.children[S.cart.findIndex(l=>l.pid===id)];if(ln){const top=ln.offsetTop-c.offsetTop;if(top<c.scrollTop||top+ln.offsetHeight>c.scrollTop+c.clientHeight)c.scrollTop=top+ln.offsetHeight-c.clientHeight}}}
 function parseDisc(sub){const v=String($("disc").value||"").replace(/\s/g,"").replace(",",".");if(!v)return 0;if(v.endsWith("%"))return Math.round(sub*Math.min(100,parseFloat(v)||0)/100);return Math.min(sub,Math.max(0,parseFloat(v)||0))}
 function cartTotals(){let sub=0,cost=0;for(const l of S.cart){const p=S.products[l.pid];sub+=l.qty*l.price;cost+=l.qty*costPrice(p?p.p:0)}const disc=parseDisc(sub);return{sub,cost,disc,sum:sub-disc,profit:sub-disc-cost}}
 function renderCart(){const c=$("cart");
@@ -1013,7 +1023,7 @@ function renderCart(){const c=$("cart");
     '<span class="muted small">×</span><input class="price" data-i="'+i+'" data-k="price" value="'+l.price+'" inputmode="numeric" aria-label="Narx"'+(isOwner()?'':' readonly title="Narxni faqat Ombor o\'zgartiradi"')+'><span class="spacer"></span><button class="btn ghost sm" data-del="'+i+'" aria-label="O\'chirish">'+ic("x")+'</button></div>'+
     (l.qty>(p.q||0)?'<div class="warn">Omborda '+fq(p.q)+' dona bor</div>':'')+'</div>'}).join("");
   renderTotals()}
-function renderTotals(){const t=cartTotals();$("tSub").textContent=fmt(t.sub);$("tSum").textContent=fmt(t.sum);$("sellBtn").disabled=!S.cart.length;
+function renderTotals(){const t=cartTotals();$("tSub").textContent=fmt(t.sub);$("tCnt").textContent=S.cart.length?"("+S.cart.length+" xil)":"";$("tSum").textContent=fmt(t.sum);$("sellBtn").disabled=!S.cart.length;
   const d=new Date();$("nextNo").textContent="№ "+pad(d.getDate())+pad(d.getMonth()+1)+"-"+(dayCheques(ymd(d)).length+1);renderPayExtra(t)}
 function renderPayExtra(t){const x=$("payExtra");t=t||cartTotals();
   if(S.pay==="naqd"){if(!x.querySelector("#recv"))x.innerHTML='<div class="trow"><span class="muted">Mijoz berdi</span><input id="recv" placeholder="0" inputmode="numeric" autocomplete="off"></div><div class="trow"><span class="muted">Qaytim</span><span class="num" id="change">—</span></div>';
