@@ -293,6 +293,12 @@ body.kassa .wrap{max-width:1600px;padding-top:24px}
 .kacts .btn:hover{border-color:var(--line2)}
 .kacts kbd{font:500 11px var(--f);color:var(--muted);margin-left:2px}
 body.kassa .cartp .card-h [data-act="vozvrat"]{display:none}
+.kursbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px;margin-bottom:14px;padding:10px 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font-size:14px}
+.kursbar .ki{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+.kursbar .ki b{font-size:16px;font-weight:600}
+.kursbar .up{color:var(--good,#16a34a)}.kursbar .dn{color:var(--bad)}
+.kursbar .spacer{flex:1}
+@media (max-width:760px){.kursbar{padding:8px 12px;gap:4px 14px;font-size:13px}.kursbar .ki b{font-size:15px}.kursbar .spacer{display:none}}
 .kstat div{white-space:nowrap}
 td.num{white-space:nowrap}
 @media (max-width:1600px){.kacts kbd{display:none}.kstat{gap:18px}.kacts .btn{padding:8px 12px}}
@@ -564,6 +570,7 @@ tfoot td{border-top:1px solid var(--line);border-bottom:0;background:var(--surfa
 
       <!-- SOTUV -->
       <section class="pane" id="p-sotuv">
+        <div class="kursbar" id="kursBar"></div>
         <div class="pos">
           <div class="card catalog">
             <div class="top">
@@ -1049,7 +1056,7 @@ $("lastPrint").onclick=()=>{if(LAST){printReceipt(LAST);toast("Chek "+LAST.no+" 
 $("lastOpen").onclick=()=>{if(LAST)showReceipt(LAST,true)};
 function renderPrintToggle(){$("pPrint").checked=S.settings.autoPrint!==false;$("pPrintHint").textContent=(Number(S.settings.paper)===58?"58":"80")+" mm"+((S.settings.copies||1)>1?" · "+S.settings.copies+" nusxa":"")}
 $("pPrint").addEventListener("change",()=>{S.settings.autoPrint=$("pPrint").checked;persist()});
-function renderPos(){renderChips();renderPosResults();renderCart();renderPrintToggle();renderLast()}
+function renderPos(){renderKurs();renderChips();renderPosResults();renderCart();renderPrintToggle();renderLast()}
 
 // ================= cheques =================
 $("chDate").value=ymd();$("chDate").addEventListener("change",renderCheques);bindSeg("chPay",renderCheques);
@@ -1350,7 +1357,7 @@ bindSeg("sCopySeg",v=>{S.settings.copies=Number(v);persist();toast("Nusxa soni: 
 $("sAuto").addEventListener("change",()=>{S.settings.autoPrint=$("sAuto").checked;persist();renderPrintToggle();toast($("sAuto").checked?"Chek o'zi chiqadi":"Chek faqat tugma bilan chiqadi")});
 $("sPrinter").addEventListener("change",()=>{S.settings.printer=$("sPrinter").value;persist();toast("Printer: "+($("sPrinter").value||"Windows asosiy printeri"))});
 async function loadPrinters(){if(!EXE)return;$("sPrinterL").hidden=false;$("batHelp").hidden=true;try{const l=await gmz.printers();const cur=S.settings.printer||"";
-  $("sPrinter").innerHTML='<option value="">Windows asosiy printeri'+(l.find(p=>p.isDefault)?" ("+esc(l.find(p=>p.isDefault).name)+")":"")+'</option>'+l.map(p=>'<option'+(p.name===cur?" selected":"")+'>'+esc(p.name)+'</option>').join("")}catch(e){}}
+  $("sPrinter").innerHTML='<option value="">Windows asosiy printeri'+(l.find(p=>p.isDefault)?" ("+esc(l.find(p=>p.isDefault).name)+")":"")+'</option>'+l.map(p=>'<option value="'+esc(p.name)+'"'+(p.name===cur?" selected":"")+'>'+esc(p.name)+'</option>').join("")}catch(e){}}
 $("sFooter").addEventListener("change",()=>{S.settings.footer=$("sFooter").value.trim();persist();toast("Saqlandi")});
 $("sTest").addEventListener("click",()=>{const n=new Date();printReceipt({no:"SINOV",t:ymd(n)+"T"+hm(n),sub:22000,disc:2000,sum:20000,pay:"naqd",recv:50000,items:[{n:"Sinov mahsuloti — 1",qty:1,price:14000},{n:"Sinov mahsuloti — 2 (uzun nom tekshirish uchun)",qty:2,price:4000}]})});
 $("fNew").addEventListener("click",pickNew);$("fOpen").addEventListener("click",pickOpen);$("fReconnect").addEventListener("click",reconnect);
@@ -1495,13 +1502,36 @@ function userModal(id){const u=id?S.users[id]:{name:"",role:"seller"};
 $("secSave").onclick=()=>{const o={lockMin:S.settings.lockMin??15,maxDisc:S.settings.maxDisc??5};S.settings.lockMin=Number($("secLock").value);S.settings.maxDisc=Math.max(0,Math.min(100,Number($("secDisc").value)||0));
   logA("Xavfsizlik sozlamalari","qulflash "+o.lockMin+" → "+S.settings.lockMin+" daq, chegirma chegarasi "+o.maxDisc+"% → "+S.settings.maxDisc+"%");persist();toast("Saqlandi")};
 
+// ---- valyuta kursi: MB (avtomatik) va do'kon kursi (qo'lda) ----
+const CBU_URL="https://cbu.uz/uz/arkhiv-kursov-valyut/json/USD/";let cbuErr=false,cbuBusy=false;
+async function cbuGet(){if(EXE&&gmz.cbu)return await gmz.cbu(CBU_URL);
+  const H=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.CapacitorHttp;
+  if(APP&&H){const r=await H.request({url:CBU_URL,method:"GET"});return typeof r.data==="string"?JSON.parse(r.data):r.data}
+  const r=await fetch(CBU_URL,{cache:"no-store"});if(!r.ok)throw new Error(r.status);return await r.json()}
+async function fetchCbu(){if(cbuBusy)return;cbuBusy=true;
+  try{const j=await cbuGet(),x=Array.isArray(j)?j[0]:j,rate=Number(String(x&&x.Rate).replace(",","."));if(!(rate>0))throw new Error("rate");
+    const dd=String(x.Date||"").split("."),date=dd.length===3?dd[2]+"-"+dd[1]+"-"+dd[0]:ymd(),o=S.settings.cbu||{};cbuErr=false;
+    if(o.rate!==rate||o.date!==date){S.settings.cbu={rate,date,diff:Number(String(x.Diff||0).replace(",","."))||0,at:Date.now()};persist()}else o.at=Date.now()}
+  catch(e){cbuErr=true}finally{cbuBusy=false}renderKurs()}
+function renderKurs(){const el=$("kursBar");if(!el)return;const s=S.settings,c=s.cbu,own=isOwner();
+  const mb=c&&c.rate?'<b>'+fmt(c.rate,2)+'</b> so\'m'+(c.diff?' <span class="small '+(c.diff>0?"up":"dn")+'">'+(c.diff>0?"▲":"▼")+fmt(Math.abs(c.diff),2)+'</span>':'')+' <span class="muted small">'+dmy(c.date)+(cbuErr?' · internet yo\'q, oxirgi kurs':'')+'</span>':'<span class="muted">'+(cbuErr?"Internet yo'q — olinmadi":"Yuklanmoqda…")+'</span>';
+  el.innerHTML='<span class="ki"><span class="muted">MB kursi (1 $):</span>'+mb+'</span><span class="ki"><span class="muted">Do\'kon kursi:</span><b>'+fmt(s.kurs)+'</b> so\'m</span><span class="spacer"></span>'+
+    '<button class="btn sm ghost" id="kbRefresh" title="MB kursini yangilash">'+ic("swap")+'Yangilash</button>'+(own?'<button class="btn sm" id="kbEdit">O\'zgartirish</button>':'');
+  $("kbRefresh").onclick=fetchCbu;if(own)$("kbEdit").onclick=editKurs}
+function editKurs(){const c=S.settings.cbu;
+  modal("Do'kon kursi",'<label class="field">1 $ necha so\'m (sotuv narxlari shu kurs bilan hisoblanadi)<input id="ekV" type="number" step="any" value="'+S.settings.kurs+'"></label>'+(c&&c.rate?'<button class="btn sm" id="ekCbu" style="margin-top:10px">MB kursini qo\'yish: '+fmt(c.rate,2)+'</button>':''),'<span class="spacer"></span><button class="btn" id="ekNo">Bekor</button><button class="btn pri" id="ekYes">Saqlash</button>');
+  $("ekV").focus();$("ekV").select();if($("ekCbu"))$("ekCbu").onclick=()=>{$("ekV").value=Math.round(c.rate)};$("ekNo").onclick=closeModal;
+  $("ekYes").onclick=()=>{const v=Number($("ekV").value);if(!(v>0)){toast("Kursni to'g'ri kiriting",true);return}const o=S.settings.kurs;closeModal();if(v===o)return;
+    S.settings.kurs=v;logA("Sozlamalar o'zgartirildi","kurs "+fmt(o)+" → "+fmt(v));persist();renderAll();toast("Do'kon kursi: "+fmt(v)+" so'm")}}
+setInterval(fetchCbu,60*60*1000);addEventListener("online",fetchCbu);setTimeout(fetchCbu,1500);
+
 // ---- journal ----
 let jLimit=300;const jReset=()=>{jLimit=300;renderJournal()};
 ["jDate","jUser"].forEach(i=>$(i).addEventListener("change",jReset));$("jSearch").addEventListener("input",jReset);
 $("jToday").addEventListener("click",()=>{$("jDate").value=ymd();jReset()});$("jAll").addEventListener("click",()=>{$("jDate").value="";$("jUser").value="";$("jSearch").value="";jReset()});
 $("jTable").addEventListener("click",e=>{if(e.target.closest("#jMore")){jLimit+=300;renderJournal()}});
 function renderJournal(){const names=[...new Set(S.log.map(x=>x.un))].sort();const cur=$("jUser").value;
-  $("jUser").innerHTML='<option value="">Barcha foydalanuvchilar</option>'+names.map(n=>'<option'+(n===cur?" selected":"")+'>'+esc(n)+'</option>').join("");
+  $("jUser").innerHTML='<option value="">Barcha foydalanuvchilar</option>'+names.map(n=>'<option value="'+esc(n)+'"'+(n===cur?" selected":"")+'>'+esc(n)+'</option>').join("");
   const d=$("jDate").value,q=fold($("jSearch").value);let l=S.log.slice().reverse();
   if(d)l=l.filter(x=>x.t.startsWith(d));if(cur)l=l.filter(x=>x.un===cur);if(q)l=l.filter(x=>fold(x.act+" "+x.det).includes(q));
   const warn=/bekor|Vozvrat|o'chirildi|Noto'g'ri|rad|o'zgartirildi|tiklandi/;

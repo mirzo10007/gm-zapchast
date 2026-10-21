@@ -12,5 +12,6 @@ contextBridge.exposeInMainWorld('gmz', {
   backup: (text, day, dir) => ipcRenderer.invoke('gmz:backup', text, day, dir),
   printers: () => ipcRenderer.invoke('gmz:printers'),
   print: (html, opt) => ipcRenderer.invoke('gmz:print', html, opt),
-  machineId: () => ipcRenderer.invoke('gmz:machineId')
+  machineId: () => ipcRenderer.invoke('gmz:machineId'),
+  cbu: (url) => ipcRenderer.invoke('gmz:cbu', url)
 });
