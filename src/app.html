@@ -939,7 +939,7 @@ const TITLES={jurnal:"Amallar jurnali",bosh:"Bosh sahifa",sotuv:"Sotuv",cheklar:
 let curTab="sotuv";
 document.querySelector(".side").addEventListener("click",e=>{const b=e.target.closest(".nav");if(b&&b.dataset.t)showTab(b.dataset.t)});$("saveState").onclick=()=>showTab("sozlama");
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g){const [t,f]=g.dataset.go.split(":");if(f==="low")setSeg($("stFilter"),"low");showTab(t)}
-  const a=e.target.closest("[data-act]");if(a){if(a.dataset.act==="reconnect")reconnect();if(a.dataset.act==="newfile")pickNew();if(a.dataset.act==="zreport")zReport();if(a.dataset.act==="addprod")editProduct(null);if(a.dataset.act==="addcust")editCustomer(null);if(a.dataset.act==="export")exportMonth();if(a.dataset.act==="vozvrat")findCheque();if(a.dataset.act==="pickbackup")pickBackupDir();if(a.dataset.act==="kassa")setMode("kassa");if(a.dataset.act==="licrenew")showActivation("");if(a.dataset.act==="bulkust")bulkUst();if(a.dataset.act==="stockrep")stockReport(a.dataset.kind);if(a.dataset.act==="import")importExcel();if(a.dataset.act==="main")setMode("main");if(a.dataset.act==="mycheques")myCheques();if(a.dataset.act==="debtpay")debtPay();if(a.dataset.act==="shift")zReport(ME&&ME.id);if(a.dataset.act==="exportnow")exportJson();if(a.dataset.act==="bperm")backupPerm()}});
+  const a=e.target.closest("[data-act]");if(a){if(a.dataset.act==="reconnect")reconnect();if(a.dataset.act==="newfile")pickNew();if(a.dataset.act==="zreport")zReport();if(a.dataset.act==="addprod")editProduct(null);if(a.dataset.act==="addcust")editCustomer(null);if(a.dataset.act==="export")exportMonth();if(a.dataset.act==="vozvrat")findCheque();if(a.dataset.act==="pickbackup")pickBackupDir();if(a.dataset.act==="kassa")setMode("kassa");if(a.dataset.act==="licrenew")showActivation("");if(a.dataset.act==="bulkust")bulkUst();if(a.dataset.act==="stockrep")stockReport(a.dataset.kind);if(a.dataset.act==="import")importExcel();if(a.dataset.act==="bulkdel")bulkDelete();if(a.dataset.act==="main")setMode("main");if(a.dataset.act==="mycheques")myCheques();if(a.dataset.act==="debtpay")debtPay();if(a.dataset.act==="shift")zReport(ME&&ME.id);if(a.dataset.act==="exportnow")exportJson();if(a.dataset.act==="bperm")backupPerm()}});
 function showTab(t){if(!isOwner()&&["bosh","hisobot","sozlama","jurnal"].includes(t))t="sotuv";if(MODE==="kassa")t="sotuv";curTab=t;
   document.querySelectorAll(".nav,#saveState").forEach(b=>{if((b.dataset.t||(b.id==="saveState"?"sozlama":""))===t)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id==="p-"+t));$("content").classList.toggle("fixed",t==="sotuv");
@@ -950,7 +950,7 @@ function renderTop(){const s=S.settings,now=new Date();
   const k=lowList().length;$("lowBadge").hidden=!k;$("lowBadge").textContent=k;
   const subs={bosh:"Bugun, "+now.getDate()+"-"+MONTHS[now.getMonth()]+" "+now.getFullYear(),sotuv:"Mahsulotni tanlang, to'lov turini belgilang va chekni chiqaring",cheklar:"Sotuvlar tarixi, qayta chop etish va bekor qilish",ombor:"Mahsulotlar, narxlar va qoldiqlar",kirim:"Kelgan mahsulotlarni ro'yxatga yig'ing va hammasini birdan omborga qabul qiling",mijoz:"Nasiyaga olgan mijozlar va to'lovlar",hisobot:"Oylik savdo, foyda va tovar harakati",jurnal:"Kim, qachon va nima qilgani. Yozuvlarni o'chirib bo'lmaydi",sozlama:"Narx, chek printeri va ma'lumotlar"};
   $("pageSub").textContent=subs[curTab];
-  const acts={bosh:'<button class="btn" data-act="zreport">'+ic("lock")+'Kunni yopish</button>',ombor:'<button class="btn" data-act="import">'+ic("upload")+'Import (Excel)</button><button class="btn" data-act="stockrep">'+ic("print")+'Ro\'yxatni chop etish</button><button class="btn pri" data-act="addprod">'+ic("plus")+'Yangi mahsulot</button>',mijoz:'<button class="btn pri" data-act="addcust">'+ic("plus")+'Yangi mijoz</button>',
+  const acts={bosh:'<button class="btn" data-act="zreport">'+ic("lock")+'Kunni yopish</button>',ombor:'<button class="btn" data-act="import">'+ic("upload")+'Import (Excel)</button><button class="btn" data-act="stockrep">'+ic("print")+'Ro\'yxatni chop etish</button><button class="btn" data-act="bulkdel">'+ic("trash")+'O\'chirish</button><button class="btn pri" data-act="addprod">'+ic("plus")+'Yangi mahsulot</button>',mijoz:'<button class="btn pri" data-act="addcust">'+ic("plus")+'Yangi mijoz</button>',
     hisobot:'<input type="month" id="rMonth" value="'+(window._rm||ym())+'"><button class="btn" data-act="export">'+ic("download")+'Excel</button>',cheklar:'<button class="btn" data-act="vozvrat">'+ic("swap")+'Vozvrat</button><button class="btn" data-act="zreport">'+ic("lock")+'Kunni yopish</button>'};
   $("topActions").innerHTML=acts[curTab]||"";const rm=$("rMonth");if(rm)rm.onchange=()=>{window._rm=rm.value;renderReport()}}
 function renderAll(){try{rebuildBrands()}catch(e){}renderTop();renderTab();refreshBanner();renderUser();renderKassaTop()}
@@ -1574,6 +1574,36 @@ function renderTgBox(){const box=$("tgBox");if(!box)return;const c=S.settings.tg
   $("tgAutoC").onchange=()=>{c.auto=$("tgAutoC").checked;persist()};
   $("tgNow").onclick=async()=>{$("tgNow").disabled=true;if(await tgSend(true,"qo'lda")){logA("Telegram'ga zaxira yuborildi","");persist();toast("Zaxira Telegram'ga yuborildi")}else toast(c.err||"Yuborilmadi",true);renderTgBox()};
   $("tgOff").onclick=()=>{logA("Telegram zaxira uzildi",c.chatName||"");delete S.settings.tg;persist();renderTgBox()}}
+
+// ---- keraksiz mahsulotlarni ko'plab o'chirish / tiklash ----
+function bulkDelete(){if(!isOwner()){requireOwner("Mahsulotlarni o'chirish",bulkDelete);return}
+  const sold=new Set();for(const c of allCheques())for(const i of c.items)if(i.pid)sold.add(i.pid);for(const k of allKirim())sold.add(k.pid);
+  const all=Object.values(S.products),zero=p=>!p.del&&(Number(p.q)||0)<=0;
+  const L={zero:()=>all.filter(zero),unused:()=>all.filter(p=>zero(p)&&!sold.has(p.id)),all:()=>all.filter(p=>!p.del),deleted:()=>all.filter(p=>p.del)};
+  modal("Mahsulotlarni o'chirish",'<div class="field">Qaysi mahsulotlar<div class="bigseg" id="bdKind" style="grid-template-columns:repeat(2,1fr)">'+
+    '<button data-v="zero" aria-pressed="true">Qoldig\'i yo\'q<small>'+L.zero().length+' ta</small></button><button data-v="unused" aria-pressed="false">Hech sotilmagan va qoldig\'i yo\'q<small>'+L.unused().length+' ta</small></button>'+
+    '<button data-v="all" aria-pressed="false">Hammasi<small>'+L.all().length+' ta</small></button><button data-v="deleted" aria-pressed="false">O\'chirilganlar (tiklash)<small>'+L.deleted().length+' ta</small></button></div></div>'+
+    '<div class="field">O\'chiriladiganlarini belgilang<div class="srbar"><input id="srQ" placeholder="Ro\'yxatdan qidirish…" autocomplete="off"><label class="srall"><input type="checkbox" id="srAll"> Hammasini belgilash</label></div><div class="srlist" id="srList"></div></div>'+
+    '<div class="small muted">O\'chirilgan mahsulot ombor va kassa ro\'yxatidan yo\'qoladi, lekin eski cheklar va hisobotlar saqlanadi. Keyin "O\'chirilganlar" bo\'limidan tiklash mumkin.</div><div id="bdConfirm"></div>',
+    '<span class="small" id="srInfo" style="font-weight:600"></span><span class="spacer"></span><button class="btn" id="bdNo">Bekor</button><button class="btn danger" id="bdGo" disabled>'+ic("trash")+'O\'chirish</button>',true);
+  let kind="zero",rows=[],picked=new Set(),vis=[];
+  const upd=()=>{const n=picked.size,res=kind==="deleted";$("srInfo").textContent=n+" / "+rows.length+" ta tanlandi";$("bdGo").disabled=!n;$("bdGo").className="btn "+(res?"pri":"danger");$("bdGo").innerHTML=res?"Tiklash ("+n+")":ic("trash")+"O'chirish ("+n+")";
+    const a=$("srAll"),k=vis.filter(p=>picked.has(p.id)).length;a.checked=!!vis.length&&k===vis.length;a.indeterminate=k>0&&k<vis.length;$("bdConfirm").innerHTML=""};
+  const draw=()=>{const q=$("srQ").value.trim();if(q){const ids=new Set(search(q,100000,rows.slice()).map(p=>p.id));vis=rows.filter(p=>ids.has(p.id))}else vis=rows;
+    $("srList").innerHTML=vis.length?vis.slice(0,1500).map(p=>'<label class="srrow"><input type="checkbox" data-sid="'+p.id+'"'+(picked.has(p.id)?' checked':'')+'><span class="idc">'+p.no+'</span><span class="nm">'+esc(p.n)+'</span><span class="sq">'+stockPill(p)+'</span></label>').join("")+(vis.length>1500?'<div class="small muted" style="padding:8px 12px">… yana '+(vis.length-1500)+' ta (qidiruv bilan toraytiring)</div>':''):'<div class="small muted" style="padding:14px">Bu ro\'yxatda mahsulot yo\'q</div>';upd()};
+  const load=()=>{rows=L[kind]().sort((a,b)=>(a.no||0)-(b.no||0));picked=new Set();$("srQ").value="";draw()};
+  $("bdKind").onclick=e=>{const b=e.target.closest("[data-v]");if(!b)return;kind=b.dataset.v;setSeg($("bdKind"),kind);load()};
+  $("srQ").oninput=draw;
+  $("srAll").onchange=()=>{for(const p of vis)if($("srAll").checked)picked.add(p.id);else picked.delete(p.id);draw()};
+  $("srList").onchange=e=>{const c=e.target.closest("[data-sid]");if(!c)return;if(c.checked)picked.add(c.dataset.sid);else picked.delete(c.dataset.sid);upd()};
+  $("bdNo").onclick=closeModal;
+  $("bdGo").onclick=()=>{const ids=[...picked],res=kind==="deleted",names=ids.map(id=>S.products[id].n);
+    $("bdConfirm").innerHTML='<div class="confirm">'+ic("alert")+'<span>'+ids.length+' ta mahsulot '+(res?"tiklanadi":"o'chiriladi")+'. Davom etamizmi?</span><span class="spacer"></span><button class="btn '+(res?"pri":"danger")+' sm" id="bdYes">Ha, '+(res?"tiklash":"o'chirish")+'</button></div>';
+    $("bdYes").onclick=()=>{for(const id of ids){if(res)delete S.products[id].del;else S.products[id].del=true}
+      if(!res)S.cart=S.cart.filter(l=>!picked.has(l.pid));
+      logA(res?"Mahsulotlar tiklandi":"Mahsulotlar o'chirildi",ids.length+" ta: "+names.slice(0,15).join(", ")+(names.length>15?" va yana "+(names.length-15)+" ta":""));
+      persist();foldCache.clear();closeModal();renderAll();toast(ids.length+" ta mahsulot "+(res?"tiklandi":"o'chirildi"))}};
+  load()}
 
 // ---- journal ----
 let jLimit=300;const jReset=()=>{jLimit=300;renderJournal()};
