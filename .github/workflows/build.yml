@@ -4,12 +4,18 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      toza:
+        description: "Toza nusxa (ichida tovar va savdo ma'lumotlari yo'q)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 env:
   VERSION: 1.3.${{ github.run_number }}
+  SUFFIX: ${{ inputs.toza && '-toza' || '' }}
 
 jobs:
   web:
@@ -19,6 +25,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - name: Build single-file app
+        env:
+          GMZ_CLEAN: ${{ inputs.toza && '1' || '' }}
         run: |
           npm i -g esbuild@0.23.1
           python3 tools/build.py web/GM_Zapchast.html
@@ -88,8 +96,8 @@ jobs:
           $BT/zipalign -p -f 4 $IN aligned.apk
           if [ -n "$KS_B64" ]; then echo "$KS_B64" | base64 -d > ks.p12; else cp mobile/signing/gmz-release.keystore ks.p12; fi
           if [ -z "$KS_PASS" ]; then export KS_PASS="$(tr -d '\r\n' < mobile/signing/password.txt)"; fi
-          $BT/apksigner sign --ks ks.p12 --ks-type PKCS12 --ks-key-alias gmz --ks-pass env:KS_PASS --key-pass env:KS_PASS --out GM-Zapchast-${VERSION}.apk aligned.apk
-          $BT/apksigner verify --print-certs GM-Zapchast-${VERSION}.apk | head -3
+          $BT/apksigner sign --ks ks.p12 --ks-type PKCS12 --ks-key-alias gmz --ks-pass env:KS_PASS --key-pass env:KS_PASS --out GM-Zapchast-${VERSION}${SUFFIX}.apk aligned.apk
+          $BT/apksigner verify --print-certs GM-Zapchast-${VERSION}${SUFFIX}.apk | head -3
           rm ks.p12
       - uses: actions/upload-artifact@v4
         with: { name: apk, path: "GM-Zapchast-*.apk" }
@@ -113,6 +121,7 @@ jobs:
           npm version $VERSION --no-git-tag-version --allow-same-version
           npm install --no-audit --no-fund
           npx electron-builder --win --x64 --publish never
+          if [ -n "$SUFFIX" ]; then for f in dist/*.exe; do mv "$f" "${f%.exe}${SUFFIX}.exe"; done; fi
       - uses: actions/upload-artifact@v4
         with: { name: exe, path: "desktop/dist/*.exe" }
 
@@ -125,9 +134,10 @@ jobs:
       - run: ls -la dist
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.VERSION }}
-          name: GM Zapchast ${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}${{ env.SUFFIX }}
+          name: GM Zapchast ${{ env.VERSION }}${{ inputs.toza && ' (toza nusxa)' || '' }}
           body: |
+            ${{ inputs.toza && 'TOZA NUSXA: ichida tovar va savdo ma''lumotlari yo''q, birinchi ishga tushirishdan boshlanadi.' || '' }}
             - GM-Zapchast-${{ env.VERSION }}.apk — Android telefon uchun
             - GM-Zapchast-Setup-${{ env.VERSION }}.exe — Windows o'rnatuvchi
             - GM-Zapchast-portable-${{ env.VERSION }}.exe — o'rnatmasdan ishlaydigan

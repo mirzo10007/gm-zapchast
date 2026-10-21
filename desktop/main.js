@@ -1,5 +1,5 @@
 // GM Zapchast — Windows dasturi (Electron asosiy jarayoni)
-const { app, BrowserWindow, ipcMain, Menu, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, dialog, shell, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -101,6 +101,26 @@ ipcMain.handle('gmz:print', async (e, html, opt) => {
     if (!pw.isDestroyed()) pw.destroy();
     return { ok: false, err: String(err && err.message || err) };
   }
+});
+
+// ---- Markaziy bank dollar kursi (brauzer CORS cheklovisiz) ----
+ipcMain.handle('gmz:cbu', async (e, url) => {
+  if (!/^https:\/\/cbu\.uz\//.test(String(url))) throw new Error('url');
+  const r = await net.fetch(url, { cache: 'no-store' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return await r.json();
+});
+
+// ---- Telegram'ga zaxira yuborish (Bot API) ----
+ipcMain.handle('gmz:tg', async (e, url, form) => {
+  if (!/^https:\/\/api\.telegram\.org\/bot[^/]+\/\w+$/.test(String(url))) throw new Error('url');
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(form || {})) {
+    if (v && typeof v === 'object' && v.text !== undefined) fd.append(k, new Blob([v.text], { type: 'application/json' }), v.name);
+    else fd.append(k, String(v));
+  }
+  const r = await fetch(url, { method: 'POST', body: fd });
+  return await r.json();
 });
 
 // ---- litsenziya uchun kompyuter identifikatori ----
