@@ -14,7 +14,8 @@ if out.returncode: print(out.stderr);sys.exit(1)
 b=base64.b64encode(out.stdout.encode('utf-8')).decode()
 loader='<script>(function(){var b="'+b+'",s=atob(b),u=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u[i]=s.charCodeAt(i);(0,Function)(new TextDecoder().decode(u))()})();</script>'
 t2=t[:start]+loader+t[end+len('</script>'):]
-seed=open(os.path.join(R,'src','seed.json'),encoding='utf-8').read().replace('</','<\\/')
+# GMZ_CLEAN=1: toza nusxa — ichida tovar/savdo ma'lumotlari bo'lmaydi
+seed='null' if os.environ.get('GMZ_CLEAN') else open(os.path.join(R,'src','seed.json'),encoding='utf-8').read().replace('</','<\\/')
 t2=t2.replace('/*SEED*/null',seed)
 os.makedirs(os.path.dirname(OUT),exist_ok=True)
 open(OUT,'w',encoding='utf-8').write(t2)
