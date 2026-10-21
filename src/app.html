@@ -1907,10 +1907,24 @@ function guessCols(head){const map={},used=new Set();const h=head.map(x=>String(
   for(const k of ["bc","spd","min","no","q","p","n"]){const re=IMP_F.find(f=>f[0]===k)[2];const i=h.findIndex((x,j)=>x&&!used.has(j)&&re.test(x));if(i>=0){map[k]=i;used.add(i)}}
   return map}
 function headerRow(rows){for(let i=0;i<Math.min(rows.length,15);i++){const r=rows[i]||[];if(Object.keys(guessCols(r)).length>=2&&r.filter(x=>String(x||"").trim()).length>=2)return i}return 0}
+// Dimart dasturidan eksport (products/..., customers/... ustunlari) — oddiy jadvalga aylantiriladi
+function dimartSheet(sh){const rows=sh.rows,h=(rows[0]||[]).map(x=>String(x||"").trim().toLowerCase());if(!h.includes("products/model"))return null;
+  const ci=k=>h.indexOf(k),g=(r,k)=>{const i=ci(k);return i<0?"":String((r||[])[i]??"").trim()};const kurs=Number(S.settings.kurs)||12280;
+  const out=[["Nomi","Narx $","Qoldiq","Shtrix-kod"]],cus=[],seenP=new Set(),seenC=new Set();let del=0,som=0;
+  for(const r of rows.slice(1)){if(!r||!r.some(v=>String(v).trim()))continue;
+    const pid=g(r,"products/product_id"),n=g(r,"products/model");
+    if(pid&&n&&!seenP.has(pid)){seenP.add(pid);if(g(r,"products/deleted_at"))del++;else{let pr=impNum(g(r,"products/price"));if(!isNaN(pr)&&pr>=1000){pr=Math.round(pr/kurs*100)/100;som++}
+      const bcs=[g(r,"products/barcode"),...g(r,"products/additional_barcodes").replace(/[\[\]"']/g," ").split(/[,;\s]+/)].filter(Boolean);
+      out.push([n,isNaN(pr)?"":String(pr),g(r,"products/amount"),bcs.join(", ")])}}
+    const cid=g(r,"customers/customer_id"),cn=g(r,"customers/name");
+    if(cid&&cn&&!seenC.has(cid)&&!g(r,"customers/deleted_at")){seenC.add(cid);const ph=h.map((x,i)=>/^customers\/phones\//.test(x)?String(r[i]??"").trim():"").filter(Boolean);
+      cus.push({name:cn,phone:ph.join(", "),note:[g(r,"customers/city"),g(r,"customers/note")].filter(Boolean).join(", ")})}}
+  return {name:"Dimart mahsulotlar",rows:out,dimart:{del,som,kurs,cus}}}
 function importExcel(){if(!isOwner()){requireOwner("Exceldan import",importExcel);return}
   const inp=document.createElement("input");inp.type="file";inp.accept=".xlsx,.csv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/comma-separated-values,text/plain";inp.onchange=async()=>{const f=inp.files[0];if(!f)return;
     if(/\.(xlsb|xls)$/i.test(f.name)){modal("Fayl turi",'<p style="margin:0">«'+esc(f.name)+'» — eski/ikkilik Excel formati. Uni Excelda oching va <b>Fayl → Сохранить как → Книга Excel (*.xlsx)</b> qilib saqlang, keyin shu .xlsx faylni tanlang.</p>','<span class="spacer"></span><button class="btn pri" id="ixOk">Tushunarli</button>');$("ixOk").onclick=closeModal;return}
     let sheets;try{const buf=await f.arrayBuffer();sheets=/\.(csv|txt)$/i.test(f.name)?readCsv(buf):await readXlsx(buf)}catch(e){toast("Faylni o'qib bo'lmadi: "+(e.message||e),true);return}
+    sheets=sheets.map(s=>dimartSheet(s)||s);
     sheets=sheets.filter(s=>s.rows.some(r=>r&&r.some(v=>String(v).trim())));if(!sheets.length){toast("Faylda ma'lumot topilmadi",true);return}
     importWizard(f.name,sheets)};inp.click()}
 function importWizard(fname,sheets){let si=0,hr=0,map={};
@@ -1919,14 +1933,19 @@ function importWizard(fname,sheets){let si=0,hr=0,map={};
     (sheets.length>1?'<label class="field">Varaq<select id="ixSheet">'+sheets.map((s,i)=>'<option value="'+i+'">'+esc(s.name)+' ('+s.rows.length+' qator)</option>').join("")+'</select></label>':'')+
     '<div class="form">'+IMP_F.map(f=>opt(f[0],f[1])).join("")+'<label class="field">Sarlavha qatori<input id="ixHr" type="number" min="1" value="1"></label></div>'+
     '<div class="field">Mavjud mahsulot topilganda (shtrix-kod, № yoki nomi bo\'yicha)<div class="bigseg three" id="ixMode"><button data-v="set" aria-pressed="true">Qoldiqni almashtirish<small>inventarizatsiya</small></button><button data-v="add" aria-pressed="false">Kirim qilish<small>soni qo\'shiladi</small></button><button data-v="info" aria-pressed="false">Faqat ma\'lumot<small>narx, kod, min</small></button></div></div>'+
-    '<div style="display:grid;gap:6px"><label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="ixNew" checked style="width:auto"> Bazada yo\'q mahsulotlarni yangi qilib qo\'shish</label><label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="ixPrice" checked style="width:auto"> Narxlarni fayldagidek yangilash</label></div>'+
+    '<div id="ixDim" class="filebox small" hidden></div>'+
+    '<div style="display:grid;gap:6px"><label class="small" id="ixCusL" style="display:flex;gap:8px;align-items:center" hidden><input type="checkbox" id="ixCus" checked style="width:auto"> <span id="ixCusT"></span></label><label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="ixNew" checked style="width:auto"> Bazada yo\'q mahsulotlarni yangi qilib qo\'shish</label><label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="ixPrice" checked style="width:auto"> Narxlarni fayldagidek yangilash</label></div>'+
     '<div id="ixSum" class="small" style="font-weight:600"></div><div class="tablewrap" id="ixPrev" style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:12px"></div>',
     '<span class="spacer"></span><button class="btn" id="ixNo">Bekor</button><button class="btn pri" id="ixGo">'+ic("upload")+'Import qilish</button>',true);
   let mode="set";
   const fill=()=>{const rows=sheets[si].rows,head=rows[hr]||[],w=Math.max(...rows.slice(0,200).map(r=>(r||[]).length),head.length);
     const o='<option value="">— yo\'q —</option>'+Array.from({length:w},(_,i)=>'<option value="'+i+'">'+String.fromCharCode(65+(i%26))+(i>=26?i/26|0:"")+': '+esc(String(head[i]||"").slice(0,30))+'</option>').join("");
     document.querySelectorAll("[data-map]").forEach(s=>{s.innerHTML=o;s.value=map[s.dataset.map]??""})};
-  const reset=()=>{const rows=sheets[si].rows;hr=headerRow(rows);$("ixHr").value=hr+1;map=guessCols(rows[hr]||[]);fill();calc()};
+  const dimInfo=()=>{const dm=sheets[si].dimart,box=$("ixDim");box.hidden=!dm;$("ixCusL").hidden=!(dm&&dm.cus.length);if(!dm)return;
+    const cn=new Set(Object.values(S.customers).map(c=>fold(c.name||""))),nc=dm.cus.filter(c=>!cn.has(fold(c.name))).length;
+    box.innerHTML='<b>Dimart fayli aniqlandi.</b> Ustunlar avtomatik moslandi: nomi, narx ($), qoldiq, shtrix-kod.'+(dm.del?' Dimartda o\'chirilgan '+dm.del+' ta mahsulot o\'tkazib yuboriladi.':'')+(dm.som?' '+dm.som+' ta mahsulot narxi so\'mda edi (1000 dan katta) — kurs '+fq(dm.kurs)+' bo\'yicha $ ga o\'tkazildi.':'');
+    $("ixCusT").textContent="Mijozlarni ham qo'shish: "+nc+" ta yangi"+(dm.cus.length>nc?" ("+(dm.cus.length-nc)+" tasi bazada bor)":"")};
+  const reset=()=>{const rows=sheets[si].rows;hr=headerRow(rows);dimInfo();$("ixHr").value=hr+1;map=guessCols(rows[hr]||[]);fill();calc()};
   const plan=()=>{const rows=sheets[si].rows,out=[],byNo={},byName={},byBc={};
     for(const p of live()){byNo[String(p.no)]=p;byName[fold(p.n)]=p;for(const c of p.bcs||[])byBc[c]=p}
     const cell=(r,k)=>map[k]===undefined||map[k]===""?"":String((r||[])[map[k]]??"").trim();
@@ -1961,8 +1980,10 @@ function importWizard(fname,sheets){let si=0,hr=0,map={};
         if(!isNaN(x.q)&&x.q>0){if(mode==="add"){p.q=r3(x.q);kin.push({p,qty:x.q,price:p.p})}else p.q=r3(x.q)}
         nNew++}}
     if(kin.length){const day=S.kirim[d]||(S.kirim[d]={d,entries:{}});kin.forEach((k,i)=>{day.entries["k"+now.getTime()+"_i"+i]={pid:k.p.id,n:k.p.n,qty:k.qty,p:k.price,t:d+"T"+hm(now),b,no:kno,sup:"Excel import",un:ME?ME.name:""}})}
-    foldCache.clear();logA("Exceldan import",fname+" · "+nUpd+" ta yangilandi ("+({set:"qoldiq almashtirildi",add:"kirim",info:"ma'lumot"})[mode]+"), "+nNew+" ta yangi"+(kin.length?" · kirim "+kno:""));
-    persist();closeModal();renderAll();toast("Import: "+nUpd+" ta yangilandi, "+nNew+" ta yangi qo'shildi")}}
+    let nCus=0;const dm=sheets[si].dimart;if(dm&&dm.cus.length&&$("ixCus").checked){const cn=new Set(Object.values(S.customers).map(c=>fold(c.name||"")));
+      dm.cus.forEach((c,i)=>{if(cn.has(fold(c.name)))return;cn.add(fold(c.name));S.customers["c"+now.getTime()+"_"+i]={name:c.name,phone:c.phone,note:c.note};nCus++})}
+    foldCache.clear();logA("Exceldan import",fname+" · "+nUpd+" ta yangilandi ("+({set:"qoldiq almashtirildi",add:"kirim",info:"ma'lumot"})[mode]+"), "+nNew+" ta yangi"+(kin.length?" · kirim "+kno:"")+(nCus?" · "+nCus+" ta mijoz":""));
+    persist();closeModal();renderAll();toast("Import: "+nUpd+" ta yangilandi, "+nNew+" ta yangi qo'shildi"+(nCus?", "+nCus+" ta mijoz":""))}}
 
 // ================= cloud sync (Google Firebase · Firestore REST) =================
 const CL={cfg:null,tok:"",exp:0,on:false,busy:false,shadow:{},qb:{},lastMs:0,err:"",okAt:0,pend:0,pushT:0,again:false,rerender:false,logSort:false};
