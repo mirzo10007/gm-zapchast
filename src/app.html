@@ -455,6 +455,15 @@ tr.click:hover td{background:#f3f7ff}
   .grid.g2,.grid.g3{gap:14px}
 }
 
+tfoot td{border-top:1px solid var(--line);border-bottom:0;background:var(--surface);position:sticky;bottom:0}
+@media (max-width:760px){
+  #jTable thead{display:none}#jTable table{min-width:0!important;width:100%}
+  #jTable tbody tr{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  #jTable td{padding:0!important;border:0!important}#jTable td:nth-child(2){text-align:right;font-weight:500}
+  #jTable td:nth-child(3),#jTable td:nth-child(4){grid-column:1/-1;word-break:break-word}
+  #p-jurnal .card-h .btn{flex:1 1 0}
+  #rDaily th:nth-child(n+3):nth-child(-n+6),#rDaily td:nth-child(n+3):nth-child(-n+6),#rDaily th:nth-child(7),#rDaily td:nth-child(7),#rDaily th:nth-child(9),#rDaily td:nth-child(9),#rDaily td .small{display:none}
+  #rDaily td,#rDaily th{padding:9px 8px!important}#rDaily table{min-width:0!important}}
 @media (max-width:760px){#stTable th:nth-child(1),#stTable td:nth-child(1),#stTable th:nth-child(4),#stTable td:nth-child(4),#stTable th:nth-child(7),#stTable td:nth-child(7),#stTable th:nth-child(8),#stTable td:nth-child(8){display:none}
   #stTable td,#stTable th{padding:9px 6px!important}#stTable td:first-of-type,#stTable td:nth-child(2){padding-left:12px!important}#stTable td:nth-child(2){min-width:0;word-break:break-word}#stTable table{min-width:0!important;width:100%}}
 </style>
@@ -657,6 +666,10 @@ tr.click:hover td{background:#f3f7ff}
           <div class="card"><div class="card-h"><h3>To'lov turlari</h3></div><div class="card-b" id="rPay"></div></div>
         </div>
         <div class="card section-gap">
+          <div class="card-h"><h3>Kunlik hisobot</h3><span class="spacer"></span><span class="hint">Kunni bossangiz — to'liq Z-hisobot</span></div>
+          <div id="rDaily" class="tbl" style="max-height:60vh"></div>
+        </div>
+        <div class="card section-gap">
           <div class="card-h"><h3>Mahsulotlar harakati</h3><span class="spacer"></span><label class="small row" style="gap:6px"><input type="checkbox" id="rOnlyMoved" checked> faqat harakatdagilar</label></div>
           <div id="rTable" class="tbl" style="max-height:60vh"></div>
         </div>
@@ -666,7 +679,7 @@ tr.click:hover td{background:#f3f7ff}
       <section class="pane" id="p-jurnal">
         <div class="card">
           <div class="card-h">
-            <input type="date" id="jDate">
+            <input type="date" id="jDate"><button class="btn" id="jToday">Bugun</button><button class="btn" id="jAll">Hammasi</button>
             <select id="jUser"><option value="">Barcha foydalanuvchilar</option></select>
             <div class="searchbox"><svg class="i"><use href="#i-search"/></svg><input id="jSearch" placeholder="Amal yoki tafsilot bo'yicha qidirish…" autocomplete="off"></div>
           </div>
@@ -1129,13 +1142,13 @@ function zHtml(d,st,title){const row=(l,v,b)=>'<tr><td>'+(b?'<b>'+l+'</b>':l)+'<
   return '<div class="c"><b>'+esc(S.settings.shop)+'</b><br>'+(title||"KUNLIK HISOBOT (Z)")+'<br>'+dmy(d)+'</div><hr><table>'+row("Cheklar",st.ch.length)+row("Bekor qilingan",st.voids)+row("Chegirmalar",fmt(st.disc))+'</table><hr><table>'+
   row("Naqd",fmt(st.by.naqd))+row("Karta",fmt(st.by.karta))+row("O'tkazma",fmt(st.by.otkazma))+row("Nasiya (qarzga)",fmt(st.by.nasiya))+row("Nasiyadan to'langan",fmt(st.nasiyaPaid))+(st.retSum?row("Vozvrat",'-'+fmt(st.retSum))+row(" naqd qaytarildi",fmt(st.retBy.naqd)):'')+row("JAMI SAVDO",fmt(st.sum),1)+'</table><hr><table>'+
   row("Qarz to'lovlari: naqd",fmt(st.payBy.naqd))+row("Qarz to'lovlari: karta",fmt(st.payBy.karta+st.payBy.otkazma))+row("KASSADA NAQD",fmt(st.cash),1)+'</table><hr>'+(isOwner()?'<table>'+row("Foyda",fmt(st.profit))+'</table><hr>':'')+'<div class="c">'+(ME?esc(ME.name)+'<br>':'')+'</div><div class="c">'+hm(new Date())+' da chop etildi</div>'}
-function zReport(uid){const draw=d=>{const st=dayStats(d,uid);$("zBody").innerHTML='<dl class="kv">'+
+function zReport(uid,d0){const fromRep=!!d0;d0=d0||ymd();const draw=d=>{const st=dayStats(d,uid);$("zBody").innerHTML='<dl class="kv">'+
     '<dt>Cheklar soni</dt><dd>'+st.ch.length+(st.voids?' <span class="muted small">(+'+st.voids+' bekor)</span>':'')+'</dd><dt>Chegirmalar</dt><dd>'+fmt(st.disc)+'</dd><div class="sep"></div>'+
     '<dt>'+tag("naqd")+'</dt><dd>'+fmt(st.by.naqd)+'</dd><dt>'+tag("karta")+'</dt><dd>'+fmt(st.by.karta)+'</dd><dt>'+tag("otkazma")+'</dt><dd>'+fmt(st.by.otkazma)+'</dd><dt>'+tag("nasiya")+' qarzga</dt><dd>'+fmt(st.by.nasiya)+'</dd><dt>Nasiyadan darhol to\'langan</dt><dd>'+fmt(st.nasiyaPaid)+'</dd>'+(st.retSum?'<dt>Vozvrat <span class="muted small">('+st.rets.length+' ta, naqd '+fmt(st.retBy.naqd)+')</span></dt><dd style="color:var(--bad)">−'+fmt(st.retSum)+'</dd>':'')+
     '<dt><b>Jami savdo</b></dt><dd class="big">'+fmt(st.sum)+'</dd><div class="sep"></div><dt>Qarz to\'lovlari (naqd)</dt><dd>'+fmt(st.payBy.naqd)+'</dd><dt>Qarz to\'lovlari (karta/o\'tkazma)</dt><dd>'+fmt(st.payBy.karta+st.payBy.otkazma)+'</dd>'+
     '<dt><b>Kassada bo\'lishi kerak (naqd)</b></dt><dd class="big">'+fmt(st.cash)+'</dd>'+(isOwner()?'<div class="sep"></div><dt>Foyda</dt><dd>'+fmt(st.profit)+'</dd>':'')+'</dl>'};
-  modal(uid?"Smena yakuni — "+esc((S.users[uid]||{}).name||""):"Kunni yopish",'<label class="field">Sana<input type="date" id="zDate" value="'+ymd()+'"></label><div id="zBody"></div>','<span class="spacer"></span><button class="btn" id="zClose">Yopish</button><button class="btn pri" id="zPrint">'+ic("print")+'Chop etish</button>');
-  draw(ymd());$("zDate").onchange=()=>draw($("zDate").value);$("zClose").onclick=closeModal;$("zPrint").onclick=()=>{const d=$("zDate").value||ymd(),st=dayStats(d,uid);printDoc(zHtml(d,st,uid?"SMENA YAKUNI":""),"Z-hisobot "+d);logA(uid?"Smena yakuni":"Kun yopildi",dmy(d)+" · savdo "+fmt(st.sum)+" · kassada "+fmt(st.cash));persist();runBackup(true)}}
+  modal(uid?"Smena yakuni — "+esc((S.users[uid]||{}).name||""):fromRep?"Kunlik hisobot":"Kunni yopish",'<label class="field">Sana<input type="date" id="zDate" value="'+d0+'"></label><div id="zBody"></div>','<span class="spacer"></span><button class="btn" id="zClose">Yopish</button><button class="btn pri" id="zPrint">'+ic("print")+'Chop etish</button>');
+  draw(d0);$("zDate").onchange=()=>draw($("zDate").value);$("zClose").onclick=closeModal;$("zPrint").onclick=()=>{const d=$("zDate").value||ymd(),st=dayStats(d,uid);printDoc(zHtml(d,st,uid?"SMENA YAKUNI":""),"Z-hisobot "+d);logA(uid?"Smena yakuni":"Kun yopildi",dmy(d)+" · savdo "+fmt(st.sum)+" · kassada "+fmt(st.cash));persist();runBackup(true)}}
 
 // ================= stock =================
 $("stSearch").addEventListener("input",renderStock);bindSeg("stFilter",renderStock);
@@ -1298,6 +1311,17 @@ function monthData(m){const [y,mo]=m.split("-").map(Number);const end=ymd(new Da
 function productRows(mov,only){const rows=[];for(const p of live()){const x=mov[p.id]||{kin:0,sold:0,kAfter:0,sAfter:0};
   const ret=x.ret||0,close=(p.q||0)-x.kAfter+x.sAfter-(x.rAfter||0),open=close-x.kin+x.sold-ret;if(only&&!x.kin&&!x.sold&&!ret)continue;rows.push({p,open:r3(open),kin:x.kin,sold:x.sold,ret,close:r3(close)})}return rows}
 $("rOnlyMoved").addEventListener("change",renderReport);
+function dailyRows(m){const [y,mo]=m.split("-").map(Number),n=new Date(y,mo,0).getDate(),out=[];
+  for(let i=1;i<=n;i++){const d=m+"-"+pad(i);if(d>ymd())break;const st=dayStats(d);if(!st.ch.length&&!st.voids&&!st.rets.length&&!st.payBy.naqd&&!st.payBy.karta&&!st.payBy.otkazma)continue;out.push({d,st})}
+  return out}
+$("rDaily").addEventListener("click",e=>{const r=e.target.closest("[data-zd]");if(r)zReport(null,r.dataset.zd)});
+function renderDaily(m){const rows=dailyRows(m).reverse();if(!rows.length){$("rDaily").innerHTML=empty("Bu oyda savdo bo'lmagan");return}
+  const T={ch:0,naqd:0,karta:0,otkazma:0,nasiya:0,ret:0,sum:0,cash:0,profit:0};
+  for(const {st} of rows){T.ch+=st.ch.length;T.naqd+=st.by.naqd;T.karta+=st.by.karta;T.otkazma+=st.by.otkazma;T.nasiya+=st.by.nasiya;T.ret+=st.retSum;T.sum+=st.sum;T.cash+=st.cash;T.profit+=st.profit}
+  const wd=["Yak","Dush","Sesh","Chor","Pay","Jum","Shan"],num=v=>v?fmt(v):'<span class="muted">—</span>';
+  $("rDaily").innerHTML='<table><thead><tr><th>Sana</th><th class="n">Cheklar</th><th class="n">Naqd</th><th class="n">Karta</th><th class="n">O\'tkazma</th><th class="n">Nasiya</th><th class="n">Vozvrat</th><th class="n">Jami savdo</th><th class="n">Kassada naqd</th><th class="n">Foyda</th></tr></thead><tbody>'+
+    rows.map(({d,st})=>'<tr class="click" data-zd="'+d+'"><td style="white-space:nowrap"><b>'+dmy(d)+'</b> <span class="muted small">'+wd[new Date(d+"T12:00").getDay()]+'</span></td><td class="n">'+st.ch.length+(st.voids?' <span class="muted small">+'+st.voids+' bekor</span>':'')+'</td><td class="n">'+num(st.by.naqd)+'</td><td class="n">'+num(st.by.karta)+'</td><td class="n">'+num(st.by.otkazma)+'</td><td class="n">'+num(st.by.nasiya)+'</td><td class="n">'+(st.retSum?'<span style="color:var(--bad)">−'+fmt(st.retSum)+'</span>':num(0))+'</td><td class="n"><b>'+fmt(st.sum)+'</b></td><td class="n">'+fmt(st.cash)+'</td><td class="n">'+fmt(st.profit)+'</td></tr>').join("")+
+    '</tbody><tfoot><tr><td><b>Jami</b></td><td class="n"><b>'+T.ch+'</b></td><td class="n"><b>'+fmt(T.naqd)+'</b></td><td class="n"><b>'+fmt(T.karta)+'</b></td><td class="n"><b>'+fmt(T.otkazma)+'</b></td><td class="n"><b>'+fmt(T.nasiya)+'</b></td><td class="n"><b>'+(T.ret?'−'+fmt(T.ret):'—')+'</b></td><td class="n"><b>'+fmt(T.sum)+'</b></td><td class="n"><b>'+fmt(T.cash)+'</b></td><td class="n"><b>'+fmt(T.profit)+'</b></td></tr></tfoot></table>'}
 function renderReport(){const m=window._rm||ym();const {mov,ch,rets,days}=monthData(m);const [y,mo]=m.split("-").map(Number);
   $("pageSub").textContent=MONTHS[mo-1]+" "+y+" bo'yicha savdo, foyda va tovar harakati";
   const retSum=rets.reduce((a,x)=>a+x.sum,0),sum=ch.reduce((a,c)=>a+c.sum,0)-retSum,pr=ch.reduce((a,c)=>a+c.profit,0)-rets.reduce((a,x)=>a+x.profit,0),disc=ch.reduce((a,c)=>a+(c.disc||0),0),kin=Object.values(mov).reduce((a,x)=>a+x.kin,0);
@@ -1306,6 +1330,7 @@ function renderReport(){const m=window._rm||ym();const {mov,ch,rets,days}=monthD
   $("rChart").innerHTML=sum?barChart(byDay,780,230):empty("Bu oyda sotuv bo'lmagan");
   const by={naqd:0,karta:0,otkazma:0,nasiya:0};for(const c of ch)by[c.pay||"naqd"]+=c.sum;
   $("rPay").innerHTML=sum?'<div class="bar-list">'+Object.keys(by).map(k=>'<div class="bar-item"><span>'+tag(k)+'</span><span class="num small">'+fmt(by[k])+' · '+Math.round(by[k]/sum*100)+'%</span><div class="track"><i style="width:'+(by[k]/sum*100)+'%"></i></div></div>').join("")+'</div>':empty("Ma'lumot yo'q");
+  renderDaily(m);
   const rows=productRows(mov,$("rOnlyMoved").checked).sort((a,b)=>b.sold-a.sold||a.p.n.localeCompare(b.p.n));
   $("rTable").innerHTML=rows.length?'<table><thead><tr><th>Mahsulot</th><th class="n">Oy boshida</th><th class="n">Kirim</th><th class="n">Sotildi</th><th class="n">Vozvrat</th><th class="n">Oy oxirida</th></tr></thead><tbody>'+
     rows.slice(0,500).map(r=>'<tr><td>'+esc(r.p.n)+'</td><td class="n">'+fq(r.open)+'</td><td class="n">'+(r.kin?fq(r.kin):"—")+'</td><td class="n">'+(r.sold?fq(r.sold):"—")+'</td><td class="n">'+(r.ret?fq(r.ret):"—")+'</td><td class="n">'+stockPill({q:r.close,min:r.p.min})+'</td></tr>').join("")+'</tbody></table>':empty("Bu oyda tovar harakati bo'lmagan")}
@@ -1364,7 +1389,8 @@ function xlsx(sheets){const ns='xmlns="http://schemas.openxmlformats.org/package
 function chequeRows(list){const out=[];for(const c of list)for(const i of c.items)out.push({"Chek":c.no,"Sana":c.t.replace("T"," "),"Holat":c.void?"bekor":"","To'lov":PAY[c.pay||"naqd"],"Mijoz":c.cname||"","Mahsulot":i.n,"Narx $":i.p,"Tannarx":i.cost,"Sotuv narxi":i.price,"Dona":i.qty,"Summa":i.price*i.qty});return out}
 function exportMonth(){const m=window._rm||ym();const {mov,ch}=monthData(m);
   const prod=productRows(mov,false).sort((a,b)=>a.p.no-b.p.no).map(r=>({"№":r.p.no,"Nomi":r.p.n,"Narx $":r.p.p,"Oy boshida":r.open,"Kirim":r.kin,"Sotildi":r.sold,"Vozvrat":r.ret,"Oy oxirida":r.close,"Min":r.p.min||0}));
-  download("hisobot-"+m+".xlsx",xlsx([["Hisobot",prod],["Sotuvlar",chequeRows(ch)],["Vozvrat",retRows(monthData(m).rets)]]))}
+  const daily=dailyRows(m).map(({d,st})=>({"Sana":dmy(d),"Cheklar":st.ch.length,"Bekor":st.voids,"Naqd":st.by.naqd,"Karta":st.by.karta,"O'tkazma":st.by.otkazma,"Nasiya":st.by.nasiya,"Vozvrat":st.retSum,"Jami savdo":st.sum,"Qarz to'lovlari":st.payBy.naqd+st.payBy.karta+st.payBy.otkazma,"Kassada naqd":st.cash,"Foyda":st.profit}));
+  download("hisobot-"+m+".xlsx",xlsx([["Hisobot",prod],["Kunlik",daily],["Sotuvlar",chequeRows(ch)],["Vozvrat",retRows(monthData(m).rets)]]))}
 function retRows(list){const o=[];for(const x of list)for(const i of x.items)o.push({"Vozvrat":x.no,"Sana":x.t.replace("T"," "),"Asl chek":x.chNo,"Mahsulot":i.n,"Dona":i.qty,"Narx":i.price,"Summa":i.price*i.qty,"Qaytarildi":x.method==="qarz"?"Qarzdan":PAY[x.method],"Sabab":x.note||""});return o}
 $("backupBtn").addEventListener("click",()=>{const bal=balances();
   const prod=live().sort((a,b)=>a.no-b.no).map(p=>({"№":p.no,"Nomi":p.n,"Shtrix-kod":(p.bcs||[]).join(", "),"Narx $":p.p,"Qoldiq":p.q||0,"Min":p.min||0}));
@@ -1470,13 +1496,16 @@ $("secSave").onclick=()=>{const o={lockMin:S.settings.lockMin??15,maxDisc:S.sett
   logA("Xavfsizlik sozlamalari","qulflash "+o.lockMin+" → "+S.settings.lockMin+" daq, chegirma chegarasi "+o.maxDisc+"% → "+S.settings.maxDisc+"%");persist();toast("Saqlandi")};
 
 // ---- journal ----
-["jDate","jUser"].forEach(i=>$(i).addEventListener("change",renderJournal));$("jSearch").addEventListener("input",renderJournal);
+let jLimit=300;const jReset=()=>{jLimit=300;renderJournal()};
+["jDate","jUser"].forEach(i=>$(i).addEventListener("change",jReset));$("jSearch").addEventListener("input",jReset);
+$("jToday").addEventListener("click",()=>{$("jDate").value=ymd();jReset()});$("jAll").addEventListener("click",()=>{$("jDate").value="";$("jUser").value="";$("jSearch").value="";jReset()});
+$("jTable").addEventListener("click",e=>{if(e.target.closest("#jMore")){jLimit+=300;renderJournal()}});
 function renderJournal(){const names=[...new Set(S.log.map(x=>x.un))].sort();const cur=$("jUser").value;
   $("jUser").innerHTML='<option value="">Barcha foydalanuvchilar</option>'+names.map(n=>'<option'+(n===cur?" selected":"")+'>'+esc(n)+'</option>').join("");
   const d=$("jDate").value,q=fold($("jSearch").value);let l=S.log.slice().reverse();
   if(d)l=l.filter(x=>x.t.startsWith(d));if(cur)l=l.filter(x=>x.un===cur);if(q)l=l.filter(x=>fold(x.act+" "+x.det).includes(q));
   const warn=/bekor|Vozvrat|o'chirildi|Noto'g'ri|rad|o'zgartirildi|tiklandi/;
-  $("jTable").innerHTML=l.length?'<table><thead><tr><th>Vaqt</th><th>Foydalanuvchi</th><th>Amal</th><th>Tafsilot</th></tr></thead><tbody>'+l.slice(0,600).map(x=>'<tr><td class="muted" style="white-space:nowrap">'+dmy(x.t.slice(0,10))+' '+x.t.slice(11,16)+'</td><td>'+esc(x.un)+'</td><td>'+(warn.test(x.act)?'<span class="pill low">'+esc(x.act)+'</span>':esc(x.act))+'</td><td class="small">'+esc(x.det)+'</td></tr>').join("")+'</tbody></table>'+(l.length>600?'<div class="card-h small muted">Oxirgi 600 ta yozuv ko\'rsatildi. Sana yoki foydalanuvchi bo\'yicha saralang.</div>':''):empty("Yozuvlar yo'q")}
+  $("jTable").innerHTML=l.length?'<table><thead><tr><th>Vaqt</th><th>Foydalanuvchi</th><th>Amal</th><th>Tafsilot</th></tr></thead><tbody>'+l.slice(0,jLimit).map(x=>'<tr><td class="muted" style="white-space:nowrap">'+dmy(x.t.slice(0,10))+' '+x.t.slice(11,16)+'</td><td>'+esc(x.un)+'</td><td>'+(warn.test(x.act)?'<span class="pill low">'+esc(x.act)+'</span>':esc(x.act))+'</td><td class="small">'+esc(x.det)+'</td></tr>').join("")+'</tbody></table>'+(l.length>jLimit?'<div class="card-h small muted"><span>'+fmt(jLimit)+' / '+fmt(l.length)+' ta yozuv ko\'rsatildi</span><span class="spacer"></span><button class="btn sm" id="jMore">Yana ko\'rsatish</button></div>':''):empty(S.log.length?"Bu saralash bo'yicha yozuv topilmadi":"Yozuvlar yo'q")}
 
 // ================= automatic daily backup =================
 let bdir=null,bOk=false;
